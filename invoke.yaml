@@ -1,0 +1,72 @@
+# =====================================================
+# INVOKE CONFIGURATION:
+# =====================================================
+# -- ON WINDOWS:
+# run:
+#   echo: true
+#   pty:  false
+#   shell: C:\Windows\System32\cmd.exe
+# =====================================================
+# MAYBE: tasks: auto_dash_names: false
+
+project:
+    name: CMakeByExample
+
+run:
+    echo: true
+    pty:  true
+
+clean:
+    extra_directories:
+      - "build"
+
+clean_all:
+    extra_directories:
+      - .pytest_cache
+
+cmake:
+    generator: ninja
+    build_dir_schema: "build.{BUILD_CONFIG}"
+    build_config_default: qnx_armlev7_Debug
+    build_config_aliases:
+        default: qnx_armlev7_Debug
+        all:
+          - qnx_armlev7_Debug
+          - qnx_armlev7_Release
+    build_config_all:
+      - qnx_armlev7_Debug
+      - qnx_armlev7_Release
+    build_configs:
+        Debug:
+            toolchain: auto
+            defines:
+              - CMAKE_BUILD_TYPE=Debug
+        Release:
+            toolchain: auto
+            defines:
+              - CMAKE_BUILD_TYPE=Release
+        qnx_armlev7_Debug:
+            toolchain: cmake/toolchain/qnx_armlev7.cmake
+            defines:
+              - CMAKE_BUILD_TYPE=Debug
+        qnx_armlev7_Release:
+            toolchain: cmake/toolchain/qnx_armlev7.cmake
+            defines:
+              - CMAKE_BUILD_TYPE=Release
+
+    project_dirs:
+      - 01_Program_example1
+      - 01_Program_example2
+      - 10_StaticLib_hello1
+      - CTest_example1
+      - CTest_boost.test
+      - CPack_tutorial
+
+# -- DISABLED:
+# behave_test:
+#    scopes:
+#      - features
+#      - tools/test-features
+#      - issue.features
+#    args: features tools/test-features issue.features
+
