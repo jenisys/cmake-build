@@ -1,5 +1,5 @@
 # =====================================================
-# INVOKE CONFIGURATION:
+# INVOKE CONFIGURATION: cmake-build
 # =====================================================
 # -- ON WINDOWS:
 # run:
@@ -10,7 +10,7 @@
 # MAYBE: tasks: auto_dash_names: false
 
 project:
-    name: CMakeByExample
+    name: cmake-build
 
 run:
     echo: true
@@ -19,23 +19,24 @@ run:
 clean:
     extra_directories:
       - "build"
+      - "dist"
+      - "examples/program_hello/build*"
+      - "examples/library_hello/build*"
 
 clean_all:
     extra_directories:
+      - .hypothesis
       - .pytest_cache
 
 cmake:
     generator: ninja
     build_dir_schema: "build.{BUILD_CONFIG}"
-    build_config_default: qnx_armlev7_Debug
     build_config_aliases:
         default: qnx_armlev7_Debug
         all:
           - qnx_armlev7_Debug
           - qnx_armlev7_Release
-    build_config_all:
-      - qnx_armlev7_Debug
-      - qnx_armlev7_Release
+
     build_configs:
         Debug:
             toolchain: auto
@@ -55,12 +56,8 @@ cmake:
               - CMAKE_BUILD_TYPE=Release
 
     project_dirs:
-      - 01_Program_example1
-      - 01_Program_example2
-      - 10_StaticLib_hello1
-      - CTest_example1
-      - CTest_boost.test
-      - CPack_tutorial
+      - examples/program_hello
+      - examples/library_hello
 
 # -- DISABLED:
 # behave_test:

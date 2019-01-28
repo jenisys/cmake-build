@@ -54,6 +54,13 @@ def reinit(ctx):
     clean.clean(ctx)
     init(ctx)
 
+@task(aliases=["examples"])
+def cmake_examples(ctx, build_config=None):
+    """Build CMake examples."""
+    build_config = build_config or "Debug"
+    with cd("examples/"):
+        ctx.run("make BUILD_CONFIG={0}".format(build_config))
+
 
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
@@ -63,6 +70,7 @@ namespace.add_task(clean.clean)
 namespace.add_task(clean.clean_all)
 namespace.add_task(init)
 namespace.add_task(reinit)
+namespace.add_task(cmake_examples)
 namespace.add_task(cmake.test, name="ctest")
 namespace.add_collection(Collection.from_module(cmake))
 namespace.add_collection(Collection.from_module(test))
