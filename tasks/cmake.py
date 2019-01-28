@@ -443,7 +443,7 @@ def _cmake_ensure_init(ctx, project_dir, generator=None, args=None, build_dir=BU
     _cmake_init(ctx, project_dir, generator=generator, args=args, build_dir=build_dir)
 
 
-def _cmake_cleanup(ctx, project_dir, build_dir=BUILD_DIR, dry_run=False):
+def _cmake_cleanup(ctx, project_dir, build_config=None, dry_run=False):
     build_dir = _cmake_make_build_dir(ctx, build_config)
     project_dir = Path(project_dir)
     project_build_dir = project_dir/build_dir
