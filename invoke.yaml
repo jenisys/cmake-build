@@ -28,36 +28,38 @@ clean_all:
       - .hypothesis
       - .pytest_cache
 
-cmake:
-    generator: ninja
-    build_dir_schema: "build.{BUILD_CONFIG}"
-    build_config_aliases:
-        default: qnx_armlev7_Debug
-        all:
-          - qnx_armlev7_Debug
-          - qnx_armlev7_Release
+# cmake_build:
+cmake_generator: ninja
+build_dir_schema: "build.{BUILD_CONFIG}"
+build_config_aliases:
+    default: debug
+    all:
+      - qnx_armlev7_Debug
+      - qnx_armlev7_Release
 
-    build_configs:
-        Debug:
-            toolchain: auto
-            defines:
-              - CMAKE_BUILD_TYPE=Debug
-        Release:
-            toolchain: auto
-            defines:
-              - CMAKE_BUILD_TYPE=Release
-        qnx_armlev7_Debug:
-            toolchain: cmake/toolchain/qnx_armlev7.cmake
-            defines:
-              - CMAKE_BUILD_TYPE=Debug
-        qnx_armlev7_Release:
-            toolchain: cmake/toolchain/qnx_armlev7.cmake
-            defines:
-              - CMAKE_BUILD_TYPE=Release
+build_configs:
+    debug:
+        # cmake_toolchain: auto
+        cmake_defines:
+          - CMAKE_BUILD_TYPE: Debug
+    Release:
+        # cmake_toolchain: auto
+        cmake_defines:
+          - CMAKE_BUILD_TYPE=Release
+    qnx_armlev7_Debug:
+        cmake_toolchain: cmake/toolchain/qnx_armlev7.cmake
+        cmake_defines:
+          - CMAKE_BUILD_TYPE=Debug
+    qnx_armlev7_Release:
+        cmake_toolchain: cmake/toolchain/qnx_armlev7.cmake
+        cmake_defines:
+          - CMAKE_BUILD_TYPE: Release
 
-    project_dirs:
-      - examples/program_hello
-      - examples/library_hello
+projects:
+  - examples/program_hello
+  - examples/library_hello
+
+
 
 # -- DISABLED:
 # behave_test:

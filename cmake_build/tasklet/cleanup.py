@@ -39,7 +39,7 @@ EXAMPLE::
     # -- FILE: tasks/docs.py
     from __future__ import absolute_import
     from invoke import task, Collection
-    from invoke_tasklet_cleanup import cleanup_tasks, cleanup_dirs
+    from tasklet_cleanup import cleanup_tasks, cleanup_dirs
 
     @task
     def clean(ctx, dry_run=False):
@@ -219,7 +219,8 @@ def clean_python(ctx, dry_run=False):
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
-namespace = Collection(clean, clean_all)
+namespace = Collection(clean_all)
+namespace.add_task(clean, default=True)
 namespace.configure({
     "clean": {
         "directories": [],

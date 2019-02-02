@@ -18,24 +18,28 @@ from __future__ import absolute_import, print_function
 # BOOTSTRAP PATH: Use provided vendor bundle if "invoke" is not installed
 # -----------------------------------------------------------------------------
 from . import _setup    # pylint: disable=wrong-import-order
-INVOKE_MINVERSION = "0.14.0"
+import os.path
+import sys
+INVOKE_MINVERSION = "1.2.0"
 _setup.setup_path()
 _setup.require_invoke_minversion(INVOKE_MINVERSION)
+
+TOPDIR = os.path.join(os.path.dirname(__file__), "..")
+TOPDIR = os.path.abspath(TOPDIR)
+sys.path.insert(0, TOPDIR)
 
 # -----------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------
-import sys
-import os.path
+# import sys
 from invoke import task, Collection
 from invoke.util import cd
-from path import Path
-from contextlib import contextmanager
 
 # -- TASK-LIBRARY:
 from . import clean
-from . import cmake
 from . import test
+from cmake_build import tasks as cmake_build
+# DISABLED: from . import cmake
 # DISABLED: from . import docs
 # DISABLED: from . import release
 
@@ -71,9 +75,10 @@ namespace.add_task(clean.clean_all)
 namespace.add_task(init)
 namespace.add_task(reinit)
 namespace.add_task(cmake_examples)
-namespace.add_task(cmake.test, name="ctest")
-namespace.add_collection(Collection.from_module(cmake))
 namespace.add_collection(Collection.from_module(test))
+namespace.add_collection(Collection.from_module(cmake_build, name="cmake_build"))
+# namespace.add_task(cmake.test, name="ctest")
+# namespace.add_collection(Collection.from_module(cmake))
 # DISABLED: namespace.add_collection(Collection.from_module(docs))
 # DISABLED: namespace.add_collection(Collection.from_module(release))
 

@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
-Provides cmake_build as invoke program.
-
-.. seealso::
-
-    * https://github.com/jenisys/cmake-build/
-    * https://pyinvoke.org/
+Provides the command tool for command-line processing.
 """
 
 from __future__ import absolute_import
@@ -20,20 +15,17 @@ import os.path
 # ----------------------------------------------------------------------------
 NAME = "cmake_build"
 HERE = os.path.dirname(__file__)
-TOP = os.path.join(HERE, "..")
+TOP  = os.path.join(HERE, "..")
 if os.path.isdir(os.path.join(TOP, NAME)):
     sys.path.insert(0, os.path.abspath(TOP))
-
 
 # ----------------------------------------------------------------------------
 # NORMAL PART:
 # ----------------------------------------------------------------------------
-from cmake_build.program import program
-
+from cmake_build.command import cmake_build as cmake_build_main
 
 # ---------------------------------------------------------------------------
 # AUTO-MAIN:
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    args = " ".join(sys.argv[:1])
-    sys.exit(program.run())
+    sys.exit(cmake_build_main(auto_envvar_prefix="CMAKE_BUILD"))

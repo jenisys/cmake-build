@@ -141,13 +141,19 @@ class CMakeProjectData(object):
 
 
 class CMakeProjectPersistentData(CMakeProjectData, PersistentData):
-    """Persistent data class for CMake project (build_dir) data."""
-    FILE_BASENAME = ".cmake_build.json"
+    """Persistent data class for CMake project (build_dir) data.
+    This data represents one build-configuration of this project.
+    """
+    FILE_BASENAME = ".cmake_build.build_config.json"
 
     def __init__(self, filename=None, data=None, cmake_generator=None, cmake_toolchain=None, **kwargs):
+        # -- OPTIONAL OVERRIDE:
         the_data = data or {}
-        the_data["cmake_generator"] = cmake_generator
-        the_data["cmake_toolchain"] = cmake_toolchain
+        if cmake_generator:
+            the_data["cmake_generator"] = cmake_generator
+        if cmake_toolchain:
+            the_data["cmake_toolchain"] = cmake_toolchain
+        # -- SETUP/INIT: BASE-CLASSES
         CMakeProjectData.__init__(self, data=the_data, **kwargs)
         PersistentData.__init__(self, filename, data=self.data)
 
@@ -228,7 +234,7 @@ class CMakeProject(object):
       and automatically triggers a cmake-reinit of the build_dir
       (example: another toolchain is used, cmake-init definitions change, ...)
     """
-    CMAKE_BUILD_DATA_FILENAME = ".cmake_build.json"
+    CMAKE_BUILD_DATA_FILENAME = ".cmake_build.build_config.json"
     CMAKE_BUILD_TYPE_DEFAULT = "Debug"
     REBUILD_USE_DEEP_CLEANUP = False
 
@@ -239,28 +245,35 @@ class CMakeProject(object):
             build_config = BuildConfig("default", cmake_build_type=cmake_build_type)
 
         project_dir = Path(project_dir or ".")
+        project_dir = project_dir.abspath()
         if not project_build_dir:
             build_dir = make_build_dir_from_schema(ctx.config, build_config.name)
             project_build_dir = project_dir/build_dir
 
-        cmake_generator = cmake_generator or build_config.cmake_generator
+        cmake_generator_default = build_config.cmake_generator
         cmake_toolchain = build_config.cmake_toolchain
 
         self.ctx = ctx
         self.project_dir = project_dir
-        self.project_build_dir = project_build_dir
+        self.project_build_dir = Path(project_build_dir).abspath()
         self.build_config = build_config
         self.current_data = None
         self.stored_data = None
         self._dirty = True
         self.load_cmake_build_data()
         self.update_from_build_config()
+        if not cmake_generator:
+            # -- INHERIT: Stored cmake_generator, if it is not overridden.
+            cmake_generator = self.stored_data.cmake_generator or cmake_generator_default
         self.cmake_generator = cmake_generator
         self.cmake_toolchain = cmake_toolchain
         self._dirty = True
 
     def reset_dirty(self):
         self._dirty = False
+
+    def exists(self):
+        return self.project_dir.isdir()
 
     @property
     def dirty(self):
@@ -371,19 +384,19 @@ class CMakeProject(object):
         project_build_dir = self.project_build_dir.relpath()
         if self.initialized and not self.needs_reinit():
             # -- CASE: ALREADY DONE w/ same cmake_generator.
-            print("CMAKE-INIT: {0}/ directory exists already (SKIPPED, generator={1})."\
+            print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})."\
                   .format(project_build_dir, self.cmake_generator))
-            return
+            return False
 
         if self.project_build_dir.isdir():
-            print("CMAKE-INIT: {0} (NEEDS-REINIT)".format(project_build_dir))
+            print("CMAKE-INIT:  {0} (NEEDS-REINIT)".format(project_build_dir))
             self.cleanup()
 
         cmake_generator = cmake_generator or self.cmake_generator
         ctx = self.ctx
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
-            print("CMAKE-INIT: {0} (using cmake.generator={1})".format(
+            print("CMAKE-INIT:  {0} (using cmake.generator={1})".format(
                   project_build_dir, cmake_generator))
 
             cmake_init_options = self.make_cmake_init_options(cmake_generator)
@@ -394,40 +407,109 @@ class CMakeProject(object):
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
             self.cmake_generator = cmake_generator
             self.store_cmake_build_data()
+        return True
 
     def init(self, args=None, cmake_generator=None):
+        """Perform CMake init of the project build directory for this build_config."""
         return self.ensure_init(args=args, cmake_generator=cmake_generator)
 
-    def build(self, args=None, init_args=None, cmake_generator=None):
+    def build(self, args=None, init_args=None, cmake_generator=None, ensure_init=True):
         """Triggers the cmake.build step (and delegate to used build-system)."""
         cmake_build_args = ""
         if args:
             cmake_build_args = "-- {0}".format(args)
 
-        self.ensure_init(args=init_args, cmake_generator=cmake_generator)
+        project_build_dir = self.project_build_dir.relpath()
+        if ensure_init:
+            self.ensure_init(args=init_args, cmake_generator=cmake_generator)
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
-            print("CMAKE-BUILD: {0}".format(self.project_build_dir.relpath()))
+            print("CMAKE-BUILD: {0}".format(project_build_dir))
             self.ctx.run("cmake --build . {0}".format(cmake_build_args).strip())
+
+    def clean(self, init_args=None):
+        """Clean the build artifacts (but: preserve CMake init)"""
+        project_build_dir = self.project_build_dir.relpath()
+        if not self.initialized:
+            print("CMAKE-CLEAN: {0} (SKIPPED: not initialized yet)".format(project_build_dir))
+            return
+
+        # -- ALTERNATIVE: self.build(args="clean", ensure_init=False)
+        self.ensure_init(args=init_args)
+        print("CMAKE-CLEAN: {0}".format(project_build_dir))
+        cmake_build_args = "clean"
+        with cd(self.project_build_dir):
+            self.ctx.run("cmake --build . -- {0}".format(cmake_build_args))
 
     def rebuild(self, args=None, init_args=None):
         if self.REBUILD_USE_DEEP_CLEANUP:
             self.cleanup()
 
-        self.build(args="clean", init_args=init_args)
-        self.build(args=args, init_args=init_args)
+        self.clean(init_args=init_args)
+        self.build(args=args, ensure_init=True)
 
     def ctest(self, args=None, init_args=None):
         ctest_args = ""
         if args:
             ctest_args = " ".join(args)
 
+        project_build_dir = self.project_build_dir.relpath()
         self.ensure_init(args=init_args)
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
-            print("CMAKE-TEST: {0}".format(self.project_build_dir.relpath()))
+            print("CMAKE-TEST:  {0}".format(project_build_dir))
             self.ctx.run("ctest {0}".format(ctest_args))
 
     def test(self, args=None, init_args=None):
         return self.ctest(args=args, init_args=init_args)
 
+
+class CMakeBuildRunner(object):
+    """Build runner for many CMake projects (composite)."""
+    def __init__(self, cmake_projects=None, target=None):
+        self.cmake_projects = cmake_projects or []
+        self.default_target = target or "build"
+
+    def execute_target(self, target):
+        target = target or self.default_target
+        for cmake_project in self.cmake_projects:
+            project_target_func = getattr(cmake_project, target, None)
+            if project_target_func:
+                project_target_func()
+            else:
+                print("CMAKE-BUILD: Skip target={0} for {1} (not-supported)".format(
+                    target, cmake_project
+                ))
+
+    def __call__(self, target=None):
+        self.execute_target(target)
+
+    def set_cmake_generator(self, cmake_generator=None):
+        # -- OVERRIDE: cmake_generator
+        for cmake_project in self.cmake_projects:
+            cmake_project.cmake_generator = cmake_generator
+
+    def run(self, target=None):
+        self.execute_target(target)
+
+    def init(self):
+        self.execute_target("init")
+
+    def build(self):
+        self.execute_target("build")
+
+    def test(self):
+        self.execute_target("test")
+
+    def reinit(self):
+        self.execute_target("cleanup")
+        self.execute_target("init")
+
+    def rebuild(self):
+        self.execute_target("rebuild")
+
+    def clean(self):
+        self.execute_target("cleanup")
+
+    def cleanup(self):
+        self.execute_target("cleanup")

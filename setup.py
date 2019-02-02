@@ -57,7 +57,7 @@ setup(
     description="cmake-build is a small wrapper around CMake to simplify its usage",
     long_description=description,
     author="Jens Engel",
-    author_email="behave-users@googlegroups.com",
+    author_email="jenisys@users.noreply.github.com",
     url="http://github.com/jenisys/cmake-build",
     provides = ["cmake_build"],
     packages = find_packages_by_root_package("cmake_build"),

@@ -1,0 +1,55 @@
+# ===========================================================================
+# CMAKE-BUILD CONFIGURATION: cmake-build.yaml
+# ===========================================================================
+# PROJECT: cmake-build/examples/
+# DESCRIPTION:
+#   * Specifies one (or more) CMake projects to build.
+#   * Simplifies CMake project setup by providing pre-canned recipes
+#     for the build-configurations, cmake-toolchains, cmake-generators, etc.
+#   * Simplifies usage of multiple cmake-toolchains
+#   * Simplifies usage of multiple cmake-generators
+#
+# SEE ALSO:
+#   * https://github.com/jenisys/cmake-build
+# ===========================================================================
+
+cmake_generator: ninja
+# MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
+build_dir_schema: "build.{BUILD_CONFIG}"
+
+build_config_aliases:
+  default: debug
+  all:
+    - debug
+    - release
+
+build_configs:
+  debug:
+    # cmake_build_type: Debug
+    # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
+    # cmake_generator: make
+    cmake_defines:
+      - CMAKE_BUILD_CONFIG: "debug"
+      # - "ONE=one"
+    # cmake_args:
+
+  release:
+    cmake_build_type: MinSizeRel
+
+projects:
+  - examples/library_hello
+  - examples/program_hello
+
+clean:
+    extra_directories:
+      - "examples/program_hello/build.*"
+      - "examples/library_hello/build.*"
+      - "examples/program_hello/build"
+      - "examples/library_hello/build"
+
+clean_all:
+    extra_directories:
+      - .hypothesis
+
+run:
+  echo: true

@@ -5,11 +5,12 @@ Provides the command tool for command-line processing.
 """
 
 from __future__ import absolute_import
-from .command import main
+import sys
+from .command import cmake_build
+# from .command import main
 
 # ---------------------------------------------------------------------------
 # AUTO-MAIN:
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    import sys
-    sys.exit(main())
+    cmake_build(auto_envvar_prefix="CMAKE_BUILD")

@@ -7,6 +7,7 @@ build/
 dist/
 __pycache__/
 __*/
+build*/
 _build/
 .cache/
 .idea/

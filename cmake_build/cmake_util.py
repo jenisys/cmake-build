@@ -103,8 +103,30 @@ def cmake_cmdline_toolchain_option(toolchain):
     return "-DCMAKE_TOOLCHAIN_FILE={0}".format(Path(toolchain).abspath())
 
 
+def cmake_normalize_defines(defines):
+    # -- NORMALIZE-DEFINES:
+    defines2 = []
+    for d in defines:
+        if isinstance(d, dict):
+            assert len(d) == 1, "ENSURE: d.size=%d: %r" % (len(d), d)
+            d = d.items()[0]
+            assert len(d) == 2, "OOPS: %r (size=%d)" % (d, len(d))
+        elif isinstance(d, six.string_types):
+            parts = d.split("=", 1)
+            if len(parts) == 1:
+                parts.append(None)
+            assert len(parts) == 2, "OOPS: %r" % parts
+            d = (parts[0], parts[1])
+            assert len(d) == 2, "OOPS: %r (size=%d)" % (d, len(d))
+        defines2.append(d)
+    return defines2
+
+
 def cmake_cmdline_defines_option(defines, toolchain=None, build_type=None, **kwargs):
-    defines = list(defines or [])
+    defines2 = cmake_normalize_defines(defines or [])
+    defines = []
+    # print("cmake_defines1: %r" % defines)
+
     if toolchain:
         cmake_defines_add(defines, "CMAKE_TOOLCHAIN_FILE", Path(toolchain).abspath())
     if build_type:
@@ -112,10 +134,12 @@ def cmake_cmdline_defines_option(defines, toolchain=None, build_type=None, **kwa
     if kwargs:
         for name, value in six.iteritems(kwargs):
             cmake_defines_add(name, value)
+    defines.extend(defines2)
     if not defines:
         return ""
 
     define_options = []
+    # print("cmake_defines2: %r" % defines)
     for name, value in defines:
         if value is not None:
             item = "-D{0}={1}".format(name, value)

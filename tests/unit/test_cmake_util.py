@@ -161,6 +161,36 @@ def test_cmake_cmdline_toolchain_option__without_toolchain_is_empty():
 
 
 # ---------------------------------------------------------------------------
+# TESTS FOR: cmake_normalize_defines()
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("expected, defines", [
+    ([("one", "VALUE_1")],                      [("one", "VALUE_1")]),
+    ([("one", "VALUE_1"), ("TWO", "value_2")],  [("one", "VALUE_1"), ("TWO", "value_2")]),
+])
+def test_cmake_normalize_defines__with_tuple(expected, defines):
+    actual = cmake_normalize_defines(defines)
+    assert actual == expected
+
+
+@pytest.mark.parametrize("expected, defines", [
+    ([("one", "VALUE_1")],               [dict(one="VALUE_1")]),
+    ([("one", "VALUE_1"), ("TWO", "value_2")], [dict(one="VALUE_1"), {"TWO": "value_2"}]),
+])
+def test_cmake_normalize_defines__with_dict(expected, defines):
+    actual = cmake_normalize_defines(defines)
+    assert actual == expected
+
+
+@pytest.mark.parametrize("expected, defines", [
+    ([("one", "VALUE_1")],                  ["one=VALUE_1"]),
+    ([("one", "VALUE_1"), ("TWO", None)],   ["one=VALUE_1", "TWO"]),
+])
+def test_cmake_normalize_defines__with_string(expected, defines):
+    actual = cmake_normalize_defines(defines)
+    assert actual == expected
+
+
+# ---------------------------------------------------------------------------
 # TESTS FOR: cmake_cmdline_defines_option()
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("expected, defines", [
@@ -181,7 +211,7 @@ def test_cmake_cmdline_defines_option__with_value_none(expected, defines):
 
 
 @pytest.mark.parametrize("expected, toolchain, defines", [
-    ("-Done=VALUE_1 -DCMAKE_TOOLCHAIN_FILE=$ABSPATH/t1.cmake", "t1.cmake", [("one", "VALUE_1")]),
+    ("-DCMAKE_TOOLCHAIN_FILE=$ABSPATH/t1.cmake -Done=VALUE_1", "t1.cmake", [("one", "VALUE_1")]),
 ])
 def test_cmake_cmdline_defines_option__with_defines_and_toolchain(expected, toolchain, defines):
     actual = cmake_cmdline_defines_option(defines, toolchain=toolchain)
@@ -199,7 +229,7 @@ def test_cmake_cmdline_defines_option__with_defines_and_toolchain(expected, tool
     "make",
 ])
 def test_cmake_cmdline__with_generator(generator):
-    expected = cmake_cmdline_generator_option(generator) + " "
+    expected = cmake_cmdline_generator_option(generator).strip()
     actual = cmake_cmdline(generator=generator)
     assert actual == expected
 
@@ -208,7 +238,7 @@ def test_cmake_cmdline__with_generator(generator):
     "cmake/toolchain/t1.cmake",
 ])
 def test_cmake_cmdline__with_toolchain(toolchain):
-    expected = cmake_cmdline_toolchain_option(toolchain) + " "
+    expected = cmake_cmdline_toolchain_option(toolchain)
     actual = cmake_cmdline(toolchain=toolchain)
     assert actual == expected
 
@@ -218,7 +248,7 @@ def test_cmake_cmdline__with_toolchain(toolchain):
     [("one", "VALUE_1"), ("two", "value_2")],
 ])
 def test_cmake_cmdline__with_defines(defines):
-    expected = cmake_cmdline_defines_option(defines) + " "
+    expected = cmake_cmdline_defines_option(defines)
     actual = cmake_cmdline(defines=defines)
     assert actual == expected
 
