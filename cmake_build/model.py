@@ -403,6 +403,7 @@ class CMakeProject(object):
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
             ctx.run("cmake {options} {relpath}".format(
                     options=cmake_init_options, relpath=relpath_to_project_dir))
+            print()
 
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
             self.cmake_generator = cmake_generator
@@ -426,6 +427,7 @@ class CMakeProject(object):
         with cd(self.project_build_dir):
             print("CMAKE-BUILD: {0}".format(project_build_dir))
             self.ctx.run("cmake --build . {0}".format(cmake_build_args).strip())
+            print()
 
     def clean(self, init_args=None):
         """Clean the build artifacts (but: preserve CMake init)"""
@@ -440,6 +442,10 @@ class CMakeProject(object):
         cmake_build_args = "clean"
         with cd(self.project_build_dir):
             self.ctx.run("cmake --build . -- {0}".format(cmake_build_args))
+
+    def reinit(self, args=None):
+        self.cleanup()
+        self.init(args=args)
 
     def rebuild(self, args=None, init_args=None):
         if self.REBUILD_USE_DEEP_CLEANUP:
@@ -459,6 +465,7 @@ class CMakeProject(object):
         with cd(self.project_build_dir):
             print("CMAKE-TEST:  {0}".format(project_build_dir))
             self.ctx.run("ctest {0}".format(ctest_args))
+            print()
 
     def test(self, args=None, init_args=None):
         return self.ctest(args=args, init_args=init_args)
