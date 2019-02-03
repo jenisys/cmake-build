@@ -25,6 +25,7 @@ import six
 # IMPORTS:
 # -----------------------------------------------------------------------------
 from invoke import task, Collection
+from invoke.exceptions import Failure, Exit
 from path import Path
 
 # -- TASK-LIBRARY:
@@ -41,27 +42,29 @@ def require_build_config_is_valid(ctx, build_config):
     build_config_alias = build_config_aliases.get(build_config, None)
     if build_config_alias:
         build_config_data = build_configs.get(build_config_alias)
+    else:
+        build_config_data = build_configs.get(build_config)
 
-    build_config_data = build_configs.get(build_config)
     if build_config_data:
         return True
 
     # -- CASE: UNKNOWN BUILD-CONFIG
     if build_config_alias:
         expected = sorted(list(build_configs.keys()))
-        expected.remove("all")
-        message = "UNKOWN-ALIAS-VALUE: build_config=%s (alias=%s, epxected=%s)" % \
-                  (build_config, build_config_alias, expected)
-        print(message)
-        # assert False, message
+        if "all" in expected:
+            expected.remove("all")
+        expected = " ,".join(sorted(expected))
+        message = "UNKOWN-BUILD-CONFIG: %s (alias=%s, expected=%s)" % \
+                  (build_config_alias, build_config, expected)
+        # print(message)
     else:
         expected = set(list(build_config_aliases.keys()))
         expected.update((list(build_configs.keys())))
         expected.remove("all")
-        expected = sorted(expected)
-        message = "UNKNOWN: build_config=%s (expected: %s)" % (build_config, expected)
-        print(message)
-        # assert False, message
+        expected = " ,".join(sorted(expected))
+        message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
+        # print(message)
+    raise Exit(message)
     return False
 
 
@@ -89,17 +92,22 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
 
 
 def make_build_config(ctx, name=None):
-    name = name or "debug"
-    config = ctx.config
+    name = name or "default"
+    aliased = ctx.config.build_config_aliases.get(name)
+    if aliased:
+        name = aliased
+        if not isinstance(name, six.string_types):
+            name = name[0]
+
     build_config_defaults = CMakeProjectData().data
     build_config_defaults["cmake_generator"] = ctx.config.cmake_generator or "ninja"
     build_config_defaults["cmake_toolchain"] = ctx.config.cmake_toolchain
     build_config_defaults["cmake_build_type"] = None
-    build_config_defaults["cmake_defines"] = ctx.config.cmake_defines or []
+    build_config_defaults["cmake_defines"] = []  # MAYBE: ctx.config.cmake_defines
     build_config_defaults["build_dir_schema"] = ctx.config.build_dir_schema
     build_config_data = {}
     build_config_data.update(build_config_defaults)
-    build_config_data2 = config.build_configs.get(name) or {}
+    build_config_data2 = ctx.config.build_configs.get(name) or {}
     build_config_data.update(build_config_data2)
     return BuildConfig(name, build_config_data)
 
@@ -107,8 +115,11 @@ def make_build_config(ctx, name=None):
 def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
     cmake_generator = kwargs.pop("generator", None)
     build_config_default = ctx.config.build_config_aliases.get("default", "debug")
-    build_config = build_config or build_config_default
+    build_config = build_config or ctx.config.build_config or build_config_default
     require_build_config_is_valid(ctx, build_config)
+    build_config_aliased = ctx.config.build_config_aliases.get(build_config)
+    if build_config_aliased:
+        build_config = build_config_aliased
 
     build_config = make_build_config(ctx, build_config)
     cmake_project = CMakeProject(ctx, project_dir, build_config=build_config,
@@ -275,7 +286,9 @@ namespace.add_task(build, default=True)
 TASKS_CONFIG_DEFAULTS = {
     "cmake_generator": None,
     "cmake_toolchain": None,
+    # "cmake_defines": [],
     "build_dir_schema": "build.{BUILD_CONFIG}",
+    "build_config": "default",
     "build_configs": {},
     "build_config_aliases": {
         "default": "debug",
