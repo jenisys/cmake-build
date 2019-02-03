@@ -45,7 +45,7 @@ def require_build_config_is_valid(ctx, build_config):
     else:
         build_config_data = build_configs.get(build_config)
 
-    if build_config_data:
+    if build_config_data is not None:
         return True
 
     # -- CASE: UNKNOWN BUILD-CONFIG
@@ -53,17 +53,20 @@ def require_build_config_is_valid(ctx, build_config):
         expected = sorted(list(build_configs.keys()))
         if "all" in expected:
             expected.remove("all")
-        expected = " ,".join(sorted(expected))
+        expected = ", ".join(sorted(expected))
         message = "UNKOWN-BUILD-CONFIG: %s (alias=%s, expected=%s)" % \
                   (build_config_alias, build_config, expected)
         # print(message)
     else:
         expected = set(list(build_config_aliases.keys()))
         expected.update((list(build_configs.keys())))
-        expected.remove("all")
-        expected = " ,".join(sorted(expected))
+        if "all" in expected:
+            expected.remove("all")
+        expected = ", ".join(sorted(expected))
         message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
-        # print(message)
+        print(message)
+        print(repr(ctx.config.build_configs))
+        print(repr(ctx.config.build_config_aliases))
     raise Exit(message)
     return False
 

@@ -337,7 +337,7 @@ class CMakeProject(object):
 
     def store_cmake_build_data(self):
         cmake_build_data_filename = self.cmake_build_data_filename
-        self.current_data["generator"] = self.cmake_generator
+        self.current_data["cmake_generator"] = self.cmake_generator
         store_always = False
         if (not cmake_build_data_filename.exists() or store_always or
            (self.current_data != self.stored_data)):
@@ -365,6 +365,10 @@ class CMakeProject(object):
 
     @property
     def initialized(self):
+        print("XXX cmake_project.initialized:")
+        print("XXX   project_build_dir=%s (exists=%s)" % (self.project_build_dir, self.project_build_dir.exists()))
+        print("XXX   cmake_build_data_file=%s (exists=%s)" % (self.cmake_build_data_filename, self.has_cmake_build_data_file()))
+        print("XXX cmake_project.initialized:")
         return (self.project_build_dir.exists() and self.has_cmake_build_data_file())
                 # XXX cmake_stored_generator
                 # XXX and self.cmake_stored_generator == self.cmake_generator)

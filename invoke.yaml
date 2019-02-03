@@ -20,8 +20,10 @@ clean:
     extra_directories:
       - "build"
       - "dist"
+      - "__WORKDIR__"
       - "examples/program_hello/build*"
       - "examples/library_hello/build*"
+      - reports
 
 clean_all:
     extra_directories:

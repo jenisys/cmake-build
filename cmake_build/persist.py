@@ -86,6 +86,7 @@ class PersistentData(object):
         with open(filename, "wb", encoding="UTF-8") as f:
             text_data = self.dump()
             f.write(text_data)
+            f.write("\n")
         return self
 
     @classmethod
