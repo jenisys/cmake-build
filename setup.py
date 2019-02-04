@@ -53,15 +53,14 @@ def find_packages_by_root_package(where):
 # -----------------------------------------------------------------------------
 setup(
     name="cmake-build",
-    version="0.1.2",
-    description="cmake-build is a small wrapper around CMake to simplify its usage",
+    version="0.1.3",
+    description="cmake-build is a small wrapper around CMake to simplify its usage as build system",
     long_description=description,
     author="Jens Engel",
     author_email="jenisys@users.noreply.github.com",
     url="http://github.com/jenisys/cmake-build",
     provides = ["cmake_build"],
     packages = find_packages_by_root_package("cmake_build"),
-    py_modules = ["setuptools_behave"],
     entry_points={
         "console_scripts": [
             "cmake-build = cmake_build.__main__:program.run"
@@ -77,12 +76,11 @@ setup(
         "invoke >= 1.2.0",
         "path.py >= 10.1",
         "six >= 1.12.0",
-        "click >= 6.0.0"
+        "click >= 7.0.0"
         "pycmd",
         "pathlib; python_version < '3.4'",
         "enum34; python_version < '3.4'",
     ],
-    # XXX test_suite="nose.collector",
     tests_require=[
         "pytest >= 3.0",
         "pytest-html >= 1.19.0",
@@ -90,13 +88,13 @@ setup(
         "mock >= 1.1",
         "PyHamcrest >= 1.8",
     ],
-    cmdclass = {
-        "behave_test": behave_test,
-    },
+    # cmdclass = {
+    #    "behave_test": behave_test,
+    # },
     extras_require={
         'docs': ["sphinx >= 1.8", "sphinx_bootstrap_theme >= 0.6"],
         'develop': [
-            "coverage", "pytest >= 3.0", "pytest-cov", "tox",
+            "coverage", "pytest >= 3.0", "pytest-html", "tox",
             # "invoke >= 1.2.0", "path.py >= 10.1", "pycmd",
             # "pathlib",  # python_version <= '3.4'
             "modernize >= 0.5",
