@@ -39,10 +39,9 @@ Feature: cmake-build init Command
   .
   . CMAKE-BUILD CONFIG DEFAULTS:
   .   cmake_generator: ninja
+  .   cmake_toolchain: None
   .   build_dir_schema: "build.{BUILD_CONFIG}"
-  .   build_config_aliases:
-  .     default: debug
-  .   build_config: default   # MEANS: debug
+  .   build_config: debug
 
 
   Background: Setup CMake Workspace
