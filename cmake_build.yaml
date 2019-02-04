@@ -17,24 +17,19 @@ cmake_generator: ninja
 # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
 build_dir_schema: "build.{BUILD_CONFIG}"
 
-build_config_aliases:
-  default: debug
-  all:
-    - debug
-    - release
-
+build_config: debug
 build_configs:
-  debug:
-    # cmake_build_type: Debug
-    # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
-    # cmake_generator: make
-    cmake_defines:
-      - CMAKE_BUILD_CONFIG: "debug"
-      # - "ONE=one"
-    # cmake_args:
+  - debug:
+      # cmake_build_type: Debug
+      # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
+      # cmake_generator: make
+      cmake_defines:
+        - CMAKE_BUILD_CONFIG: "debug"
+        # - "ONE=one"
+      # cmake_args:
 
-  release:
-    cmake_build_type: MinSizeRel
+  - release:
+      cmake_build_type: MinSizeRel
 
 projects:
   - examples/library_hello

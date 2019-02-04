@@ -51,10 +51,8 @@ Feature: cmake-build init Command
         """
         cmake_generator: ninja
         build_configs:
-          debug:
-            cmake_build_type: Debug
-          release:
-            cmake_build_type: MinSizeRel
+          - debug
+          - release
 
         projects:
           - library_hello
@@ -159,8 +157,8 @@ Feature: cmake-build init Command
         """
         cmake_generator: ninja
         build_configs:
-          debug:
-            cmake_build_type: OTHER
+          - debug:
+              cmake_build_type: OTHER
 
         projects:
           - library_hello
@@ -189,10 +187,10 @@ Feature: cmake-build init Command
         """
         cmake_generator: ninja
         build_configs:
-          debug:
-            cmake_build_type: Debug
-            cmake_defines:
-              - NEW_PARAM: foo
+          - debug:
+              cmake_build_type: Debug
+              cmake_defines:
+                - NEW_PARAM: foo
 
         projects:
           - library_hello
@@ -238,8 +236,8 @@ Feature: cmake-build init Command
         """
         cmake_generator: ninja
         build_configs:
-          debug:
-            cmake_build_type: Debug
+          - debug:
+              cmake_build_type: Debug
         """
     But note that "NO PROJECTS are specified in configfile"
     When I run "cmake-build init"

@@ -10,7 +10,7 @@ import os
 class MockConfig(object):
     defaults = {
         "build_config": os.environ.get("CMAKE_BUILD_CONFIG", "debug"),
-        "build_configs": dict(debug={}, release={}),
+        "build_configs": ["debug", "release"],
         "projects": [],
         # DISABLED: "build_config_aliases": {"default": "debug"},
     }
@@ -23,19 +23,31 @@ class MockConfig(object):
         self.data.update(**kwargs)
         self.build_dir_schema = "build.{BUILD_CONFIG}"
         self.build_config = self.data.get("build_config")
+        self.build_configs_map = {}
         self.cmake_generator = "ninja"
         self.cmake_toolchain = None
         # DISABLED: self.build_config = self.build_config_aliases.get("default", "debug")
 
+    def get(self, name, default=None):
+        if name == "build_configs_map":
+            return self.build_configs_map
+        else:
+            return self.data.get(name, default)
+
     @property
     def build_configs(self):
         return self.data["build_configs"]
+
+    @property
+    def projects(self):
+        return self.data["projects"]
 
     # DISABLED:
     # @property
     # def build_config_aliases(self):
     #     return self.data["build_config_aliases"]
 
+    # XXX-JE-CHECK:
     @property
     def build_projects(self):
         return self.data["projects"]

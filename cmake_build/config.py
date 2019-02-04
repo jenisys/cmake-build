@@ -1,3 +1,9 @@
+# STATUS: PREPARED (for click support)
+
+
+# ---------------------------------------------------------------------------
+# PREPARED:
+# ---------------------------------------------------------------------------
 CMAKE_BUILD_TARGETS = [
     "init", "build", "test", "clean", "reinit", "rebuild"
     # MAYBE: install, cpack, ctest

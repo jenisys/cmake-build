@@ -37,16 +37,54 @@ from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
 # -----------------------------------------------------------------------------
 # TASK UTILITIES:
 # -----------------------------------------------------------------------------
+# XXX-JE-WORKMARK-CHECK-IF-REALLY-NEEDED:
+# class CMakeBuildConfigNormalizer(object):
+#
+#     @staticmethod
+#     def normalize_build_configs(config):
+#         build_configs = config.build_configs
+#         if isinstance(build_configs, (list, tuple)):
+#             # -- CASE: Convert build_configs as list into dict.
+#             the_build_configs = {}
+#             for build_config in build_configs:
+#                 the_build_configs[build_config] = {}
+#             config.build_configs = the_build_configs
+#
+#     @classmethod
+#     def normalize(cls, config):
+#         # DISABLED: cls.normalize_build_configs(config)
+#         pass
+
+def make_build_configs_map(build_configs):
+    build_configs_map = {}
+    for build_config in build_configs:
+        if isinstance(build_config, six.string_types):
+            build_configs_map[build_config] = {}
+        elif isinstance(build_config, dict):
+            assert len(build_config) == 1, "ENSURE: length=1 (%r)" % build_config
+            name = list(build_config.keys())[0]
+            build_config_data = build_config[name]
+            build_configs_map[name] = build_config_data
+        else:
+            raise ValueError("UNEXPECTED: %r (expected: string, dict(size=1)" % build_config)
+    return build_configs_map
+
+
 def require_build_config_is_valid(ctx, build_config):
     if not build_config:
         build_config = ctx.config.build_config or "debug"
-    build_configs = ctx.config.build_configs or {}
+    build_configs = ctx.config.build_configs or []
+    build_configs_map = ctx.config.get("build_configs_map", None)
+    if not build_configs_map:
+        build_configs_map = make_build_configs_map(build_configs)
+        ctx.config.build_configs_map = build_configs_map
+
     # DISABLED: build_config_aliases = ctx.config.build_config_aliases or {}
     # DISABLED: build_config_alias = build_config_aliases.get(build_config, None)
     # DISABLED: if build_config_alias:
     # DISABLED:     build_config_data = build_configs.get(build_config_alias)
     # DISABLED: else:
-    build_config_data = build_configs.get(build_config)
+    build_config_data = build_configs_map.get(build_config)
 
     if build_config_data is not None:
         return True
@@ -66,10 +104,10 @@ def require_build_config_is_valid(ctx, build_config):
     # DISABLED: expected.update((list(build_configs.keys())))
     # DISABLED: if "all" in expected:
     # DISABLED:     expected.remove("all")
-    expected = ", ".join(sorted(list(build_configs.keys())))
+    expected = ", ".join(sorted(list(build_configs_map.keys())))
     message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
     print(message)
-    print(repr(ctx.config.build_configs))
+    print(repr(ctx.config.build_configs_map))
     # DISABLED: print(repr(ctx.config.build_config_aliases))
     raise Exit(message)
     return False
@@ -126,12 +164,19 @@ def make_build_config(ctx, name=None):
     build_config_defaults["build_dir_schema"] = ctx.config.build_dir_schema
     build_config_data = {}
     build_config_data.update(build_config_defaults)
-    build_config_data2 = ctx.config.build_configs.get(name) or {}
+    build_config_data2 = ctx.config.build_configs_map.get(name) or {}
     build_config_data.update(build_config_data2)
     return BuildConfig(name, build_config_data)
 
 
 def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
+    if not ctx.config.build_configs_map:
+        # -- LAZY-INIT: Build build_configs_map once from build_configs list.
+        build_configs_map = make_build_configs_map(ctx.config.build_configs)
+        ctx.config.build_configs_map = build_configs_map
+        # MAYBE-MORE:
+        # CMakeBuildConfigNormalizer.normalize(ctx.config)
+
     cmake_generator = kwargs.pop("generator", None)
     # DISABLED: build_config_default = ctx.config.build_config_aliases.get("default", "debug")
     build_config_default = ctx.config.build_config or "debug"
@@ -279,13 +324,17 @@ def cmake_build_show_build_configs(build_configs):
 def config(ctx):
     """Show cmake-build configuration details."""
     from pprint import pprint
-    config = ctx.config
+    # config = ctx.config
+    if not ctx.config.build_configs_map:
+        build_configs_map = make_build_configs_map(ctx.config.build_configs)
+        ctx.config.build_configs_map = build_configs_map
+
     print("cmake_generator: %s" % ctx.config.cmake_generator)
     cmake_build_show_build_configs(config.build_configs)
-    cmake_build_show_projects(config.projects)
-    pprint(config, indent=4)
+    cmake_build_show_projects(ctx.config.projects)
+    pprint(ctx.config, indent=4)
     print("-------------------------")
-    pprint(dict(config), indent=4)
+    pprint(dict(ctx.config), indent=4)
     # return 1/0
 
 
@@ -309,7 +358,8 @@ TASKS_CONFIG_DEFAULTS = {
     # "cmake_defines": [],
     "build_dir_schema": "build.{BUILD_CONFIG}",
     "build_config": "debug",
-    "build_configs": {},
+    "build_configs": [],
+    "build_configs_map": {},
     "projects": [],
     # DISABLED: "build_config_aliases": {
     # DISABLED:     "default": "debug",
