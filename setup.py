@@ -53,7 +53,7 @@ def find_packages_by_root_package(where):
 # -----------------------------------------------------------------------------
 setup(
     name="cmake-build",
-    version="0.1.1",
+    version="0.1.2",
     description="cmake-build is a small wrapper around CMake to simplify its usage",
     long_description=description,
     author="Jens Engel",
