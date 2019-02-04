@@ -38,36 +38,39 @@ from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
 # TASK UTILITIES:
 # -----------------------------------------------------------------------------
 def require_build_config_is_valid(ctx, build_config):
+    if not build_config:
+        build_config = ctx.config.build_config or "debug"
     build_configs = ctx.config.build_configs or {}
-    build_config_aliases = ctx.config.build_config_aliases or {}
-    build_config_alias = build_config_aliases.get(build_config, None)
-    if build_config_alias:
-        build_config_data = build_configs.get(build_config_alias)
-    else:
-        build_config_data = build_configs.get(build_config)
+    # DISABLED: build_config_aliases = ctx.config.build_config_aliases or {}
+    # DISABLED: build_config_alias = build_config_aliases.get(build_config, None)
+    # DISABLED: if build_config_alias:
+    # DISABLED:     build_config_data = build_configs.get(build_config_alias)
+    # DISABLED: else:
+    build_config_data = build_configs.get(build_config)
 
     if build_config_data is not None:
         return True
 
-    # -- CASE: UNKNOWN BUILD-CONFIG
-    if build_config_alias:
-        expected = sorted(list(build_configs.keys()))
-        if "all" in expected:
-            expected.remove("all")
-        expected = ", ".join(sorted(expected))
-        message = "UNKOWN-BUILD-CONFIG: %s (alias=%s, expected=%s)" % \
-                  (build_config_alias, build_config, expected)
-        # print(message)
-    else:
-        expected = set(list(build_config_aliases.keys()))
-        expected.update((list(build_configs.keys())))
-        if "all" in expected:
-            expected.remove("all")
-        expected = ", ".join(sorted(expected))
-        message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
-        print(message)
-        print(repr(ctx.config.build_configs))
-        print(repr(ctx.config.build_config_aliases))
+    # DISABLED:
+    #  -- CASE: UNKNOWN BUILD-CONFIG
+    # if build_config_alias:
+    #     expected = sorted(list(build_configs.keys()))
+    #     if "all" in expected:
+    #         expected.remove("all")
+    #     expected = ", ".join(sorted(expected))
+    #     message = "UNKOWN-BUILD-CONFIG: %s (alias=%s, expected=%s)" % \
+    #               (build_config_alias, build_config, expected)
+    #     # print(message)
+    # else:
+    # DISABLED: expected = set(list(build_config_aliases.keys()))
+    # DISABLED: expected.update((list(build_configs.keys())))
+    # DISABLED: if "all" in expected:
+    # DISABLED:     expected.remove("all")
+    expected = ", ".join(sorted(list(build_configs.keys())))
+    message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
+    print(message)
+    print(repr(ctx.config.build_configs))
+    # DISABLED: print(repr(ctx.config.build_config_aliases))
     raise Exit(message)
     return False
 
@@ -109,11 +112,11 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
 
 def make_build_config(ctx, name=None):
     name = name or ctx.config.build_config or "default"
-    aliased = ctx.config.build_config_aliases.get(name)
-    if aliased:
-        name = aliased
-        if not isinstance(name, six.string_types):
-            name = name[0]
+    # DISABLED: aliased = ctx.config.build_config_aliases.get(name)
+    # DISABLED: if aliased:
+    # DISABLED:     name = aliased
+    # DISABLED:     if not isinstance(name, six.string_types):
+    # DISABLED:         name = name[0]
 
     build_config_defaults = CMakeProjectData().data
     build_config_defaults["cmake_generator"] = ctx.config.cmake_generator or "ninja"
@@ -130,12 +133,13 @@ def make_build_config(ctx, name=None):
 
 def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
     cmake_generator = kwargs.pop("generator", None)
-    build_config_default = ctx.config.build_config_aliases.get("default", "debug")
-    build_config = build_config or ctx.config.build_config or build_config_default
+    # DISABLED: build_config_default = ctx.config.build_config_aliases.get("default", "debug")
+    build_config_default = ctx.config.build_config or "debug"
+    build_config = build_config or build_config_default
     require_build_config_is_valid(ctx, build_config)
-    build_config_aliased = ctx.config.build_config_aliases.get(build_config)
-    if build_config_aliased:
-        build_config = build_config_aliased
+    # DISABLED: build_config_aliased = ctx.config.build_config_aliases.get(build_config)
+    # DISABLED: if build_config_aliased:
+    # DISABLED:     build_config = build_config_aliased
 
     build_config = make_build_config(ctx, build_config)
     cmake_project = CMakeProject(ctx, project_dir, build_config=build_config,
@@ -304,12 +308,12 @@ TASKS_CONFIG_DEFAULTS = {
     "cmake_toolchain": None,
     # "cmake_defines": [],
     "build_dir_schema": "build.{BUILD_CONFIG}",
-    "build_config": "default",
+    "build_config": "debug",
     "build_configs": {},
-    "build_config_aliases": {
-        "default": "debug",
-    },
     "projects": [],
+    # DISABLED: "build_config_aliases": {
+    # DISABLED:     "default": "debug",
+    # DISABLED: },
 }
 namespace.configure(TASKS_CONFIG_DEFAULTS)
 

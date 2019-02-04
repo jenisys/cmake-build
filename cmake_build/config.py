@@ -10,9 +10,10 @@ class CMakeBuildConfig(object):
     CONFIG_DEFAULTS = {
         "generator": None,
         "toolchain": None,
-        "build_config_aliases": dict(default="default"),
-        "build_configs": {},
-        "projects": []
+        "build_config": "debug",
+        "build_configs": dict(debug={}, release={}),
+        "projects": [],
+        # DISABLED: "build_config_aliases": dict(default="default"),
     }
 
     def __init__(self, filename=None, **kwargs):

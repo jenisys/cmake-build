@@ -4,15 +4,15 @@ from __future__ import absolute_import, print_function
 from cmake_build.model import CMakeProject, BuildConfig
 from cmake_build import tasks # make_cmake_project,  make_build_config
 from path import Path
+import os
 
 
 class MockConfig(object):
     defaults = {
+        "build_config": os.environ.get("CMAKE_BUILD_CONFIG", "debug"),
         "build_configs": dict(debug={}, release={}),
-        "build_config_aliases": {
-            "default": "debug"
-        },
-        "projects": []
+        "projects": [],
+        # DISABLED: "build_config_aliases": {"default": "debug"},
     }
 
     def __init__(self, data=None, **kwargs):
@@ -22,17 +22,19 @@ class MockConfig(object):
             self.data.update(data)
         self.data.update(**kwargs)
         self.build_dir_schema = "build.{BUILD_CONFIG}"
-        self.build_config = self.build_config_aliases.get("default", "debug")
+        self.build_config = self.data.get("build_config")
         self.cmake_generator = "ninja"
         self.cmake_toolchain = None
+        # DISABLED: self.build_config = self.build_config_aliases.get("default", "debug")
 
     @property
     def build_configs(self):
         return self.data["build_configs"]
 
-    @property
-    def build_config_aliases(self):
-        return self.data["build_config_aliases"]
+    # DISABLED:
+    # @property
+    # def build_config_aliases(self):
+    #     return self.data["build_config_aliases"]
 
     @property
     def build_projects(self):
