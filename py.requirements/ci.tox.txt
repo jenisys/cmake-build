@@ -10,4 +10,5 @@ invoke >= 1.2.0
 click
 
 pathlib2; python_version < '3.4'
+
 -r ../tasks/py.requirements.txt

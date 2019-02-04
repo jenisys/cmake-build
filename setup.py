@@ -76,7 +76,7 @@ setup(
         "invoke >= 1.2.0",
         "path.py >= 10.1",
         "six >= 1.12.0",
-        "click >= 7.0.0"
+        "click >= 7.0.0",
         "pycmd",
         "pathlib; python_version < '3.4'",
         "enum34; python_version < '3.4'",

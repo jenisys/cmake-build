@@ -14,5 +14,5 @@ path.py >= 10.1
 pathlib;    python_version <= '3.4'
 backports.shutil_which; python_version <= '3.3'
 
-# For cleanup of python files: py.cleanup
+# -- CLEANUP: For cleanup of python files: py.cleanup
 pycmd
