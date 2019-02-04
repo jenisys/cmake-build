@@ -7,8 +7,9 @@ build/
 dist/
 __pycache__/
 __*/
-build*/
 _build/
+build*/
+/reports/
 .cache/
 .idea/
 .pytest_cache/
