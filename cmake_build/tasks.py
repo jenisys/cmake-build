@@ -84,14 +84,26 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
     else:
         raise ValueError("projects=%r with type=%s" % (projects, type(projects)))
 
+    missing_project_dirs = []
     for project_dir in project_dirs:
         project_dir = Path(project_dir)
         if not project_dir.isdir():
             if verbose:
                 print("CMAKE-BUILD: Skip project {0} (NOT-FOUND)".format(
                       project_dir))
+                missing_project_dirs.append(project_dir)
             continue
         yield project_dir
+    # -- FINALLY:
+    if len(missing_project_dirs) == len(project_dirs):
+        if missing_project_dirs:
+            # -- OOPS: Only missing project_dirs
+            message = "CMAKE-BUILD: OOPS, all projects are MISSING (STOP HERE)."
+            # print(message)
+        else:
+            message = "CMAKE-BUILD: OOPS, no projects are specified (STOP HERE)."
+            # print(message)
+        raise Exit(message)
 
 
 def make_build_config(ctx, name=None):
