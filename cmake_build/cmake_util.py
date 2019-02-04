@@ -109,7 +109,7 @@ def cmake_normalize_defines(defines):
     for d in defines:
         if isinstance(d, dict):
             assert len(d) == 1, "ENSURE: d.size=%d: %r" % (len(d), d)
-            d = d.items()[0]
+            d = list(d.items())[0]
             assert len(d) == 2, "OOPS: %r (size=%d)" % (d, len(d))
         elif isinstance(d, six.string_types):
             parts = d.split("=", 1)

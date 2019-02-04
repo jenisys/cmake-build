@@ -64,7 +64,7 @@ setup(
     py_modules = ["setuptools_behave"],
     entry_points={
         "console_scripts": [
-            "cmake-build = cmake_build.__main__:main"
+            "cmake-build = cmake_build.__main__:program.run"
         ],
         "distutils.commands": [
             "behave_test = setuptools_behave:behave_test"
@@ -74,14 +74,19 @@ setup(
     # SUPPORT: python2.7, python3.3 (or higher)
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
     install_requires=[
+        "invoke >= 1.2.0",
         "path.py >= 10.1",
         "six >= 1.12.0",
+        "click >= 6.0.0"
+        "pycmd",
+        "pathlib; python_version < '3.4'",
         "enum34; python_version < '3.4'",
     ],
     # XXX test_suite="nose.collector",
     tests_require=[
         "pytest >= 3.0",
         "pytest-html >= 1.19.0",
+        "behave >= 1.2.6",
         "mock >= 1.1",
         "PyHamcrest >= 1.8",
     ],
@@ -92,8 +97,8 @@ setup(
         'docs': ["sphinx >= 1.8", "sphinx_bootstrap_theme >= 0.6"],
         'develop': [
             "coverage", "pytest >= 3.0", "pytest-cov", "tox",
-            "invoke >= 1.2.0", "path.py >= 10.1", "pycmd",
-            "pathlib",  # python_version <= '3.4'
+            # "invoke >= 1.2.0", "path.py >= 10.1", "pycmd",
+            # "pathlib",  # python_version <= '3.4'
             "modernize >= 0.5",
             "pylint",
         ],

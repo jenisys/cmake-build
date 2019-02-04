@@ -3,7 +3,7 @@
 import cmake_build.cmake_util
 from cmake_build.cmake_util import *
 import pytest
-
+import six
 
 # ---------------------------------------------------------------------------
 # TEST SUPPORT
@@ -12,7 +12,7 @@ class MockConfig(object):
     def __init__(self, data=None, **kwargs):
         data = data or {}
         data.update(**kwargs)
-        for name, value in data.iteritems():
+        for name, value in six.iteritems(data):
             setattr(self, name, value)
 
 # ---------------------------------------------------------------------------
