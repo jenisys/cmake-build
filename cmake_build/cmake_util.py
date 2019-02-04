@@ -88,10 +88,10 @@ def cmake_cmdline_generator_option(generator):
     generator_option = ""
     if generator:
         cmake_generator = CMAKE_GENERATOR_ALIAS_MAP.get(generator) or generator
-        generator_schema = "-G {0} "
+        generator_schema = '-G {0} '
         if cmake_generator.count(" ") > 0:
             # -- CASE: Generator name w/ multiple words => QUOTE it.
-            generator_schema = "-G '{0}' "
+            generator_schema = '-G "{0}" '
         generator_option = generator_schema.format(cmake_generator)
     return generator_option
 

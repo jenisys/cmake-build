@@ -16,6 +16,7 @@ from .cmake_util import \
     cmake_defines_add    as _cmake_defines_add, \
     cmake_defines_remove as _cmake_defines_remove
 from .persist import PersistentData, Unknown
+from .pathutil import posixpath_normpath
 from invoke.util import cd
 from path import Path
 
@@ -375,11 +376,12 @@ class CMakeProject(object):
     # -- PROJECT-COMMAND API:
     def cleanup(self):
         if self.project_build_dir.isdir():
-            "CMAKE-CLEANUP: {0}".format(self.project_build_dir.relpath())
+            project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
+            "CMAKE-CLEANUP: {0}".format(project_build_dir)
             self.project_build_dir.rmtree_p()
 
     def ensure_init(self, args=None, cmake_generator=None): # @simplify
-        project_build_dir = self.project_build_dir.relpath()
+        project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if self.initialized and not self.needs_reinit():
             # -- CASE: ALREADY DONE w/ same cmake_generator.
             print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})."\
@@ -399,6 +401,7 @@ class CMakeProject(object):
 
             cmake_init_options = self.make_cmake_init_options(cmake_generator)
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
+            relpath_to_project_dir = posixpath_normpath(relpath_to_project_dir)
             ctx.run("cmake {options} {relpath}".format(
                     options=cmake_init_options, relpath=relpath_to_project_dir))
             print()
@@ -418,7 +421,7 @@ class CMakeProject(object):
         if args:
             cmake_build_args = "-- {0}".format(args)
 
-        project_build_dir = self.project_build_dir.relpath()
+        project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if ensure_init:
             self.ensure_init(args=init_args, cmake_generator=cmake_generator)
         self.project_build_dir.makedirs_p()
@@ -429,7 +432,7 @@ class CMakeProject(object):
 
     def clean(self, init_args=None):
         """Clean the build artifacts (but: preserve CMake init)"""
-        project_build_dir = self.project_build_dir.relpath()
+        project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if not self.initialized:
             print("CMAKE-CLEAN: {0} (SKIPPED: not initialized yet)".format(project_build_dir))
             return
@@ -457,7 +460,7 @@ class CMakeProject(object):
         if args:
             ctest_args = " ".join(args)
 
-        project_build_dir = self.project_build_dir.relpath()
+        project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         self.ensure_init(args=init_args)
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
@@ -483,7 +486,7 @@ class CMakeBuildRunner(object):
                 project_target_func()
             else:
                 print("CMAKE-BUILD: Skip target={0} for {1} (not-supported)".format(
-                    target, cmake_project
+                    target, posixpath_normpath(cmake_project.project_dir)
                 ))
 
     def __call__(self, target=None):

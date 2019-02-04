@@ -120,8 +120,8 @@ def test_cmake_cmdline_generator_option__with_one_word_is_unquoted(generator, ex
 
 
 @pytest.mark.parametrize("generator, expected", [
-    ("two words", "-G 'two words'"),
-    ("Unix Makefiles", "-G 'Unix Makefiles'"),
+    ("two words",      '-G "two words"'),
+    ("Unix Makefiles", '-G "Unix Makefiles"'),
 ])
 def test_cmake_cmdline_generator_option__with_two_words_are_quoted(generator, expected):
     text = cmake_cmdline_generator_option(generator)
@@ -130,7 +130,7 @@ def test_cmake_cmdline_generator_option__with_two_words_are_quoted(generator, ex
 
 @pytest.mark.parametrize("generator, expected", [
     ("ninja", "-G Ninja"),
-    ("make",  "-G 'Unix Makefiles'"),
+    ("make",  '-G "Unix Makefiles"'),
 ])
 def test_cmake_cmdline_generator_option__with_alias(generator, expected):
     text = cmake_cmdline_generator_option(generator)

@@ -448,7 +448,7 @@ class TestCMakeProject(object):
             assert_cmake_project_used_init_using_captured(cmake_project1, captured,
                                                           cmake_generator="make")
             # assert "CMAKE-INIT:  build (using cmake.generator=make)" in captured.out
-            assert ctx.last_command == "cmake -G 'Unix Makefiles' .."
+            assert ctx.last_command == 'cmake -G "Unix Makefiles" ..'
 
         # -- STEP 2: Second cmake_project.init => REINIT: Other cmake_generator is used.
         with cd(project_dir):
@@ -569,7 +569,7 @@ class TestCMakeProject(object):
 
             # -- POSTCONDITIONS:
             expected_commands = [
-                "cmake -G 'Unix Makefiles' ..",
+                'cmake -G "Unix Makefiles" ..',
                 "cmake --build ."
             ]
             assert ctx.commands == expected_commands

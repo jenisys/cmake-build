@@ -34,7 +34,7 @@ def before_all(context):
     # USE: behave -D browser=safari ...
     # XXX-DISABLED: setup_active_tag_values(active_tag_value_provider, context.config.userdata)
     setup_python_path()
-    setup_command_shell_processors4behave()
+    setup_command_shell_processors4cmake_build()
 
 def before_feature(context, feature):
     if active_tag_matcher.should_exclude_with(feature.tags):
@@ -54,3 +54,17 @@ def setup_python_path():
     # os.environ["PYTHONPATH"] = PYPATH_PREFIX + os.pathsep + PYTHONPATH
     topdir_extra_libdir = os.path.join(TOPDIR, "/lib/python")
     sys.path = [".", TOPDIR, topdir_extra_libdir] + sys.path
+
+
+def setup_command_shell_processors4cmake_build():
+    from behave4cmd0.command_shell import Command
+    from behave4cmd0.command_shell_proc import BehaveWinCommandOutputProcessor, ExceptionWithPathNormalizer
+    class CMakeBuildWinCommandOutputProcessor(BehaveWinCommandOutputProcessor):
+        line_processors = BehaveWinCommandOutputProcessor.line_processors + [
+            ExceptionWithPathNormalizer("CMAKE-INIT:  '(?P<path>.*)'", "CMAKE-INIT:  "),
+        ]
+    Command.POSTPROCESSOR_MAP["cmake-build"] = []
+    for processor_class in [CMakeBuildWinCommandOutputProcessor]:
+        if processor_class.enabled:
+            processor = processor_class()
+            Command.POSTPROCESSOR_MAP["cmake-build"].append(processor)

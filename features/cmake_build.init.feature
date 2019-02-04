@@ -122,7 +122,7 @@ Feature: cmake-build init Command
     When I run "cmake-build init"
     Then the CMake project is initialized
     But note that "INTERESTING PART: Run 'cmake-build init' again"
-    When I run "cmake-build init -g make"
+    When I run "cmake-build init --generator=make"
     Then it should pass with:
       """
       CMAKE-INIT:  library_hello/build.debug (NEEDS-REINIT)
@@ -130,7 +130,7 @@ Feature: cmake-build init Command
       """
     And the command output should contain:
       """
-      cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Debug ..
+      cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
       """
     And the command output should contain:
       """

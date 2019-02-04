@@ -19,6 +19,7 @@ Invoke tasks for building C/C++ projects w/ CMake.
 """
 
 from __future__ import absolute_import, print_function
+from cmake_build.pathutil import posixpath_normpath
 import six
 
 # -----------------------------------------------------------------------------
@@ -90,7 +91,7 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
         if not project_dir.isdir():
             if verbose:
                 print("CMAKE-BUILD: Skip project {0} (NOT-FOUND)".format(
-                      project_dir))
+                      posixpath_normpath(project_dir)))
                 missing_project_dirs.append(project_dir)
             continue
         yield project_dir
@@ -107,7 +108,7 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
 
 
 def make_build_config(ctx, name=None):
-    name = name or "default"
+    name = name or ctx.config.build_config or "default"
     aliased = ctx.config.build_config_aliases.get(name)
     if aliased:
         name = aliased
