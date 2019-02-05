@@ -9,10 +9,10 @@
 # ============================================================================
 
 invoke >= 1.2.0
+path.py >= 11.5.0
+pycmd
 six >= 1.12.0
-path.py >= 10.1
+
+# -- PYTHON2 BACKPORTS:
 pathlib;    python_version <= '3.4'
 backports.shutil_which; python_version <= '3.3'
-
-# -- CLEANUP: For cleanup of python files: py.cleanup
-pycmd

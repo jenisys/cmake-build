@@ -74,19 +74,19 @@ setup(
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
     install_requires=[
         "invoke >= 1.2.0",
-        "path.py >= 10.1",
+        "path.py >= 11.5.0",
         "six >= 1.12.0",
         "click >= 7.0.0",
         "pycmd",
         "pathlib; python_version < '3.4'",
-        "enum34; python_version < '3.4'",
     ],
     tests_require=[
-        "pytest >= 3.0",
+        "pytest <  5.0; python_version < '3.0'",
+        "pytest >= 4.0; python_version >= '3.0'",
         "pytest-html >= 1.19.0",
         "behave >= 1.2.6",
-        "mock >= 1.1",
-        "PyHamcrest >= 1.8",
+        "PyHamcrest >= 1.9",
+        # PREPARED: "mock >= 2.0",
     ],
     # cmdclass = {
     #    "behave_test": behave_test,
@@ -94,9 +94,13 @@ setup(
     extras_require={
         'docs': ["sphinx >= 1.8", "sphinx_bootstrap_theme >= 0.6"],
         'develop': [
-            "coverage", "pytest >= 3.0", "pytest-html", "tox",
-            # "invoke >= 1.2.0", "path.py >= 10.1", "pycmd",
-            # "pathlib",  # python_version <= '3.4'
+            "coverage",
+            "pytest <  5.0; python_version < '3.0'",
+            "pytest >= 4.0; python_version >= '3.0'",
+            "pytest-html >= 1.19.0",
+            "behave >= 1.2.6",
+            "PyHamcrest >= 1.9",
+            "tox",
             "modernize >= 0.5",
             "pylint",
         ],
@@ -105,9 +109,12 @@ setup(
     use_2to3= bool(python_version >= 3.0),
     license="BSD",
     classifiers=[
-        "Development Status :: 4 - Beta",   # XXX
+        "Development Status :: 4 - Beta",
         "Environment :: Console",
+        "Framework :: Invoke",
+        "Framework :: CMake",   # USING: CMake <https://cmake.org>
         "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
@@ -115,11 +122,9 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
-        # XXX-MAYBE: "Programming Language :: Python :: Implementation :: CPython",
-        # XXX-MAYBE:"Programming Language :: Python :: Implementation :: Jython",
-        # XXX-MAYBE:"Programming Language :: Python :: Implementation :: PyPy",
-        "Topic :: Software Development :: Testing",  # XXX
-        "License :: OSI Approved :: BSD License",
+        "Programming Language :: C++",  # FOR: Intended Audience
+        "Topic :: Software Development :: Build Tools",
+        "Topic :: Utilities",
     ],
     zip_safe = True,
 )
