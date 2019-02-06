@@ -199,5 +199,3 @@ def cmake_cmdline(args=None, defines=None, generator=None,
                                                    defines=defines_part,
                                                    args=args)
     return cmdline.strip()
-
-

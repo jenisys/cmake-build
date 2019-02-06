@@ -5,7 +5,7 @@ This module contains utility class to load and store persistent data.
 
 from __future__ import absolute_import
 import json
-from codecs import open
+from codecs import open     # pylint: disable=redefined-builtin
 from path import Path
 
 
@@ -49,16 +49,16 @@ class PersistentData(object):
     #         value = self.data.get(name, default)
     #     return value
     #
-    # def clear(self):
-    #     # -- KEEP: self.data_dir
-    #     self.data = {}
-    #
-    # def assign(self, data):
-    #     # -- WORKS WITH: this-class or dict-like
-    #     the_data = data
-    #     if isinstance(data, self.__class__):
-    #         the_data = data.data
-    #     self.data = the_data.copy()
+    def clear(self):
+        # -- KEEP: self.data_dir
+        self.data = {}
+
+    def assign(self, data):
+        # -- WORKS WITH: this-class or dict-like
+        the_data = data
+        if isinstance(data, self.__class__):
+            the_data = data.data
+        self.data = the_data.copy()
 
     # -- PATH-LIKE:
     def exists(self):
@@ -82,7 +82,7 @@ class PersistentData(object):
     def save(self, filename=None):
         filename = Path(filename or self.filename)
         dirname = filename.dirname()
-        dirname.makedirs_p()
+        dirname.makedirs_p()    # pylint: disable=no-value-for-parameter
         with open(filename, "wb", encoding="UTF-8") as f:
             text_data = self.dump()
             f.write(text_data)

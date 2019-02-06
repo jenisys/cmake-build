@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
-# XXX-WIP
+# WIP
+# pylint: disable=no-value-for-parameter, unused-argument, unused-import
 """
 Provides the command tool for command-line processing.
 
@@ -12,13 +13,11 @@ Provides the command tool for command-line processing.
 """
 
 from __future__ import absolute_import
+import click
+from path import Path
 from .config import CMakeBuildConfig, CMakeBuildConfigValidator, CMAKE_BUILD_TARGETS
 from .tasks import CMakeBuildRunner
 from .version import VERSION
-import click
-from path import Path
-
-
 
 
 def cmake_build_run(config):
@@ -43,8 +42,9 @@ def cmake_build_run(config):
               type=click.Choice(CMAKE_BUILD_TARGETS), default="build",
               help="CMake target to use (default: build).")
 @click.version_option(VERSION)
-@click.argument("args", required=False) # XXX, multiple=True)
-def cmake_build(filename, build_config, project, target, args=None):
+@click.argument("args", required=False)     # MAYBE: multiple=True)
+@click.pass_context
+def cmake_build(ctx, filename, build_config, project, target, args=None):
     """cmake-build is a thin wrapper around CMake.
     It automatically initializes CMake projects by using the
     provided data in a configuration file.
@@ -65,19 +65,18 @@ def cmake_build(filename, build_config, project, target, args=None):
             if result != 0:
                 verdict = "FAILED"
             click.echo("CMAKE-BUILD: {verdict}".format(verdict=verdict))
-            click.exit(result)
+            ctx.exit(result)
         else:
             click.echo("CMAKE-BUILD: Missing config-file={0}".format(filename))
-            click.exit(1)
+            ctx.exit(1)
     except KeyboardInterrupt:
         click.echo("ABORTED-BY-USER.")
-        click.exit(3)
-    except Exception as e:
+        ctx.exit(3)
+    except Exception as e:  # pylint: disable=broad-except
         click.echo("ERROR, CAUGHT EXCEPTION: {0}:{1}".format(
-                    e.__class__.__name__, e))
-        click.exit(2)
-    click.exit(0)
+            e.__class__.__name__, e))
+        ctx.exit(2)
+    ctx.exit(0)
 
 if __name__ == "__main__":
     cmake_build()
-    # MAYBE: auto_envvar_prefix="CMAKE_BUILD"

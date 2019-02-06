@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-# XXX-WIP
 """
 Provides the command tool for command-line processing.
 """

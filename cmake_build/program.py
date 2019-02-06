@@ -13,8 +13,6 @@ Simple example how invoke.Program can be used in own scripts/commands.
 from __future__ import absolute_import, print_function
 from invoke import Program, Collection
 from invoke.config import Config, merge_dicts
-from path import Path
-# import os
 
 
 # ---------------------------------------------------------------------------
@@ -26,8 +24,6 @@ from cmake_build.version import VERSION
 
 namespace = Collection.from_module(cmake_build_tasks)
 namespace.add_collection(Collection.from_module(cleanup))
-# namespace.add_task(cleanup.clean, name="clean0")
-# namespace.add_task(cleanup.clean_all)
 
 
 # ---------------------------------------------------------------------------
@@ -68,10 +64,10 @@ class CMakeBuildProgramConfig(Config):
 #     def __init__(self, **kwargs):
 #         cmake_build_namespace = kwargs.pop("namespace", namespace)
 #         super(CMakeBuildProgram, self).__init__(version=self.version,
-#                                                 name=self.name,
-#                                                 namespace=cmake_build_namespace,
-#                                                 config_class=CMakeBuildProgramConfig,
-#                                                 **kwargs)
+#                         name=self.name,
+#                         namespace=cmake_build_namespace,
+#                         config_class=CMakeBuildProgramConfig,
+#                         **kwargs)
 
 
 # program = CMakeBuildProgram()

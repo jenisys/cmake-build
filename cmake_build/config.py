@@ -1,5 +1,5 @@
 # STATUS: PREPARED (for click support)
-
+# pylint: disable=unused-argument, no-self-use
 
 # ---------------------------------------------------------------------------
 # PREPARED:
@@ -32,21 +32,25 @@ class CMakeBuildConfig(object):
         self.data = {}
         self.data.update(self.CONFIG_DEFAULTS)
 
-
     def load(self, filename=None):
+        # PREPARED:
         filename = filename or self.filename
 
 
 class CMakeBuildConfigValidator(object):
 
-    def __index__(self, config):
+    def __init__(self, config):
         self.config = config
         self.error_message = None
 
+    @property
+    def build_config(self):
+        return self.config.get("build_config", "debug")
+
     def check_build_config(self, build_config=None):
         build_config = build_config or self.build_config
-        ok = build_config in self.data["build_configs"]
-        if not ok:
+        okay = build_config in self.config["build_configs"]
+        if not okay:
             self.error_message = "BAD-BUILD-CONFIG={0}".format(build_config)
 
     def check_project(self, project):
@@ -57,5 +61,4 @@ class CMakeBuildConfigValidator(object):
         assert config is not None
         if self.check_build_config(config.build_config):
             return False
-
-
+        return True

@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+# pylint: disable=no-value-for-parameter, invalid-name
 """
 Contains the CMake model entities to simplify interaction with `CMake`_.
 
@@ -10,15 +11,14 @@ from __future__ import absolute_import, print_function
 # -----------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------
-from .cmake_util import \
-    make_build_dir_from_schema, map_build_config_to_cmake_build_type, \
-    cmake_cmdline, cmake_cmdline_generator_option, \
-    cmake_defines_add    as _cmake_defines_add, \
-    cmake_defines_remove as _cmake_defines_remove
-from .persist import PersistentData, Unknown
-from .pathutil import posixpath_normpath
 from invoke.util import cd
 from path import Path
+from .cmake_util import \
+    make_build_dir_from_schema, map_build_config_to_cmake_build_type, \
+    cmake_cmdline, cmake_defines_add as _cmake_defines_add, \
+    cmake_defines_remove as _cmake_defines_remove
+from .persist import PersistentData
+from .pathutil import posixpath_normpath
 
 
 # -----------------------------------------------------------------------------
@@ -84,8 +84,7 @@ class CMakeProjectData(object):
     def __eq__(self, other):
         if isinstance(other, dict):
             return self.data == other
-        else:
-            return self.data == other.data
+        return self.data == other.data
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -147,7 +146,8 @@ class CMakeProjectPersistentData(CMakeProjectData, PersistentData):
     """
     FILE_BASENAME = ".cmake_build.build_config.json"
 
-    def __init__(self, filename=None, data=None, cmake_generator=None, cmake_toolchain=None, **kwargs):
+    def __init__(self, filename=None, data=None, cmake_generator=None,
+                 cmake_toolchain=None, **kwargs):
         # -- OPTIONAL OVERRIDE:
         the_data = data or {}
         if cmake_generator:
@@ -265,7 +265,8 @@ class CMakeProject(object):
         self.update_from_build_config()
         if not cmake_generator:
             # -- INHERIT: Stored cmake_generator, if it is not overridden.
-            cmake_generator = self.stored_data.cmake_generator or cmake_generator_default
+            cmake_generator = self.stored_data.cmake_generator or \
+                              cmake_generator_default
         self.cmake_generator = cmake_generator
         self.cmake_toolchain = cmake_toolchain
         self._dirty = True
@@ -308,7 +309,7 @@ class CMakeProject(object):
         self.dirty = True
 
     def _on_cmake_build_data_loaded(self, data):
-        # XXX-JE-CHECK-REALLY-NEEDED
+        """Can be overridden."""
         pass
 
     def update_from_build_config(self):
@@ -340,8 +341,8 @@ class CMakeProject(object):
         cmake_build_data_filename = self.cmake_build_data_filename
         self.current_data["cmake_generator"] = self.cmake_generator
         store_always = False
-        if (not cmake_build_data_filename.exists() or store_always or
-           (self.current_data != self.stored_data)):
+        if (not cmake_build_data_filename.exists() or store_always
+                or (self.current_data != self.stored_data)):
             # -- STORE DATA (persistently):
             self.current_data.save(self.cmake_build_data_filename)
             self.stored_data = self.current_data.copy()
@@ -371,7 +372,7 @@ class CMakeProject(object):
     def needs_reinit(self):
         return ((self.current_data != self.stored_data) or
                 not self.cmake_build_data_filename.exists())
-                # XXX or self.dirty)
+                # -- MAYBE: or self.dirty
 
     # -- PROJECT-COMMAND API:
     def cleanup(self):
@@ -384,8 +385,9 @@ class CMakeProject(object):
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if self.initialized and not self.needs_reinit():
             # -- CASE: ALREADY DONE w/ same cmake_generator.
+            # pylint: disable=line-too-long
             print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})."\
-                  .format(project_build_dir, self.cmake_generator))
+                .format(project_build_dir, self.cmake_generator))
             return False
 
         if self.project_build_dir.isdir():
@@ -396,8 +398,9 @@ class CMakeProject(object):
         ctx = self.ctx
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
+            # pylint: disable=line-too-long
             print("CMAKE-INIT:  {0} (using cmake.generator={1})".format(
-                  project_build_dir, cmake_generator))
+                project_build_dir, cmake_generator))
 
             cmake_init_options = self.make_cmake_init_options(cmake_generator)
             if args:
@@ -405,7 +408,7 @@ class CMakeProject(object):
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
             relpath_to_project_dir = posixpath_normpath(relpath_to_project_dir)
             ctx.run("cmake {options} {relpath}".format(
-                    options=cmake_init_options, relpath=relpath_to_project_dir))
+                options=cmake_init_options, relpath=relpath_to_project_dir))
             print()
 
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
@@ -414,10 +417,13 @@ class CMakeProject(object):
         return True
 
     def init(self, args=None, cmake_generator=None):
-        """Perform CMake init of the project build directory for this build_config."""
+        """Perform CMake init of the project build directory for this
+        build_config.
+        """
         return self.ensure_init(args=args, cmake_generator=cmake_generator)
 
-    def build(self, args=None, init_args=None, cmake_generator=None, ensure_init=True):
+    def build(self, args=None, init_args=None, cmake_generator=None,
+              ensure_init=True):
         """Triggers the cmake.build step (and delegate to used build-system)."""
         cmake_build_args = ""
         if args:
@@ -436,7 +442,8 @@ class CMakeProject(object):
         """Clean the build artifacts (but: preserve CMake init)"""
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if not self.initialized:
-            print("CMAKE-CLEAN: {0} (SKIPPED: not initialized yet)".format(project_build_dir))
+            print("CMAKE-CLEAN: {0} (SKIPPED: not initialized yet)".format(
+                project_build_dir))
             return
 
         # -- ALTERNATIVE: self.build(args="clean", ensure_init=False)

@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 # pylint: disable=wrong-import-position, wrong-import-order
+# pylint: disable=unused-argument, redefined-builtin
 """
 Invoke tasks for building C/C++ projects w/ CMake.
 
@@ -21,13 +22,14 @@ Invoke tasks for building C/C++ projects w/ CMake.
 from __future__ import absolute_import, print_function
 from cmake_build.pathutil import posixpath_normpath
 import six
+from path import Path
 
 # -----------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------
+# from invoke.exceptions import Failure
 from invoke import task, Collection
-from invoke.exceptions import Failure, Exit
-from path import Path
+from invoke.exceptions import Exit
 
 # -- TASK-LIBRARY:
 from .tasklet.cleanup import cleanup_tasks
@@ -37,7 +39,7 @@ from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
 # -----------------------------------------------------------------------------
 # TASK UTILITIES:
 # -----------------------------------------------------------------------------
-# XXX-JE-WORKMARK-CHECK-IF-REALLY-NEEDED:
+# CHECK-IF-REALLY-NEEDED:
 # class CMakeBuildConfigNormalizer(object):
 #
 #     @staticmethod
@@ -66,6 +68,7 @@ def make_build_configs_map(build_configs):
             build_config_data = build_config[name]
             build_configs_map[name] = build_config_data
         else:
+            # pylint: disable=line-too-long
             raise ValueError("UNEXPECTED: %r (expected: string, dict(size=1)" % build_config)
     return build_configs_map
 
@@ -73,44 +76,22 @@ def make_build_configs_map(build_configs):
 def require_build_config_is_valid(ctx, build_config):
     if not build_config:
         build_config = ctx.config.build_config or "debug"
+
     build_configs = ctx.config.build_configs or []
     build_configs_map = ctx.config.get("build_configs_map", None)
     if not build_configs_map:
         build_configs_map = make_build_configs_map(build_configs)
         ctx.config.build_configs_map = build_configs_map
 
-    # DISABLED: build_config_aliases = ctx.config.build_config_aliases or {}
-    # DISABLED: build_config_alias = build_config_aliases.get(build_config, None)
-    # DISABLED: if build_config_alias:
-    # DISABLED:     build_config_data = build_configs.get(build_config_alias)
-    # DISABLED: else:
     build_config_data = build_configs_map.get(build_config)
-
     if build_config_data is not None:
         return True
 
-    # DISABLED:
-    #  -- CASE: UNKNOWN BUILD-CONFIG
-    # if build_config_alias:
-    #     expected = sorted(list(build_configs.keys()))
-    #     if "all" in expected:
-    #         expected.remove("all")
-    #     expected = ", ".join(sorted(expected))
-    #     message = "UNKOWN-BUILD-CONFIG: %s (alias=%s, expected=%s)" % \
-    #               (build_config_alias, build_config, expected)
-    #     # print(message)
-    # else:
-    # DISABLED: expected = set(list(build_config_aliases.keys()))
-    # DISABLED: expected.update((list(build_configs.keys())))
-    # DISABLED: if "all" in expected:
-    # DISABLED:     expected.remove("all")
     expected = ", ".join(sorted(list(build_configs_map.keys())))
     message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
     print(message)
     print(repr(ctx.config.build_configs_map))
-    # DISABLED: print(repr(ctx.config.build_config_aliases))
     raise Exit(message)
-    return False
 
 
 def cmake_select_project_dirs(ctx, projects=None, verbose=False):
@@ -132,7 +113,7 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
         if not project_dir.isdir():
             if verbose:
                 print("CMAKE-BUILD: Skip project {0} (NOT-FOUND)".format(
-                      posixpath_normpath(project_dir)))
+                    posixpath_normpath(project_dir)))
                 missing_project_dirs.append(project_dir)
             continue
         yield project_dir
@@ -150,12 +131,6 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
 
 def make_build_config(ctx, name=None):
     name = name or ctx.config.build_config or "default"
-    # DISABLED: aliased = ctx.config.build_config_aliases.get(name)
-    # DISABLED: if aliased:
-    # DISABLED:     name = aliased
-    # DISABLED:     if not isinstance(name, six.string_types):
-    # DISABLED:         name = name[0]
-
     build_config_defaults = CMakeProjectData().data
     build_config_defaults["cmake_generator"] = ctx.config.cmake_generator or "ninja"
     build_config_defaults["cmake_toolchain"] = ctx.config.cmake_toolchain
@@ -178,13 +153,9 @@ def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
         # CMakeBuildConfigNormalizer.normalize(ctx.config)
 
     cmake_generator = kwargs.pop("generator", None)
-    # DISABLED: build_config_default = ctx.config.build_config_aliases.get("default", "debug")
     build_config_default = ctx.config.build_config or "debug"
     build_config = build_config or build_config_default
     require_build_config_is_valid(ctx, build_config)
-    # DISABLED: build_config_aliased = ctx.config.build_config_aliases.get(build_config)
-    # DISABLED: if build_config_aliased:
-    # DISABLED:     build_config = build_config_aliased
 
     build_config = make_build_config(ctx, build_config)
     cmake_project = CMakeProject(ctx, project_dir, build_config=build_config,
@@ -211,13 +182,13 @@ def init(ctx, project="all", build_config=None, generator=None, args=None):
     """Initialize all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
-                                         # DISABLED: init_args=args, generator=generator)
     for cmake_project in cmake_projects:
         cmake_project.init(args=args)
 
 
 @task
-def build(ctx, project="all", build_config=None, generator=None, args=None, init_args=None):
+def build(ctx, project="all", build_config=None, generator=None,
+          args=None, init_args=None):
     """Build one or all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
@@ -227,7 +198,8 @@ def build(ctx, project="all", build_config=None, generator=None, args=None, init
 
 
 @task
-def test(ctx, project="all", build_config=None, generator=None, args=None, init_args=None):
+def test(ctx, project="all", build_config=None, generator=None,
+         args=None, init_args=None):
     """Test one or all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
@@ -236,16 +208,18 @@ def test(ctx, project="all", build_config=None, generator=None, args=None, init_
 
 
 @task
-def clean(ctx, project="all", build_config=None, args=None, dry_run=False):
+def clean(ctx, project="all", build_config=None, args=None,
+          dry_run=False):
     """Cleanup all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          verbose=False)
     for cmake_project in cmake_projects:
-        cmake_project.clean(args=args)     # TODO: dry_run=dry_run)
+        cmake_project.clean(args=args)     # MAYBE: dry_run=dry_run)
 
 
 @task
-def reinit(ctx, project="all", build_config=None, generator=None, args=None, dry_run=False):
+def reinit(ctx, project="all", build_config=None, generator=None, args=None,
+           dry_run=False):
     """Reinit cmake projects (performs: cleanup, init)."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          init_args=args, verbose=False)
@@ -257,49 +231,50 @@ def reinit(ctx, project="all", build_config=None, generator=None, args=None, dry
 
 
 @task
-def rebuild(ctx, project="all", build_config=None, generator=None, args=None, init_args=None):
+def rebuild(ctx, project="all", build_config=None, generator=None,
+            args=None, init_args=None):
     """Rebuild one or all CMake projects (performs: clean, build)."""
-    # build(ctx, project=project, build_config=build_config, args="clean", generator=generator, init_args=init_args)
-    # build(ctx, project=project, build_config=build_config, args=args, generator=generator, init_args=init_args)
-    cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
+    cmake_projects = make_cmake_projects(ctx, project,
+                                         build_config=build_config,
                                          verbose=False)
     cmake_runner = CMakeBuildRunner(cmake_projects)
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
         cmake_runner.set_cmake_generator(generator)
-    cmake_runner.rebuild(args=args, init_args=init_args)    # PREPARED, TODO: dry_run=dry_run)
+    cmake_runner.rebuild(args=args, init_args=init_args)
+    # PREPARED, TODO: dry_run=dry_run)
 
 
 @task
-def all(ctx, project="all", generator=None, build_config=None, args=None, init_args=None, test_args=None):
+def all(ctx, project="all", generator=None, build_config=None,
+        args=None, init_args=None, test_args=None):
     """Performs multiple stsps for one (or more) projects:
 
     - cmake.init
     - cmake.build
     - cmake.test (= ctest)
     """
-    # build(ctx, project=project, build_config=build_config, args=args, generator=generator, init_args=init_args)
-    # test(ctx, project=project, build_config=build_config, args=test_args)
-
-    cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         init_args=args, verbose=False)
+    cmake_projects = make_cmake_projects(ctx, project,
+                                         build_config=build_config,
+                                         init_args=args,
+                                         verbose=False)
     for cmake_project in cmake_projects:
         cmake_project.build(args=args, init_args=init_args)
         cmake_project.test(args=test_args)
 
 @task
-def redo(ctx, project="all", build_config=None, generator=None, args=None, init_args=None, test_args=None):
+def redo(ctx, project="all", build_config=None, generator=None,
+         args=None, init_args=None, test_args=None):
     """Performs multiple steps for one (or more) projects:
 
     - cmake.reinit
     - cmake.build
     - cmake.test (= ctest)
     """
-    # reinit(ctx, project=project, build_config=build_config, generator=generator, args=init_args)
-    # build(ctx, project=project, build_config=build_config, args=args)
-    # test(ctx, project=project, build_config=build_config, args=test_args)
-    cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         generator=generator, init_args=args)
+    cmake_projects = make_cmake_projects(ctx, project,
+                                         build_config=build_config,
+                                         generator=generator,
+                                         init_args=args)
     for cmake_project in cmake_projects:
         cmake_project.reinit(args=init_args)
         cmake_project.build(args=args)
@@ -337,7 +312,6 @@ def config(ctx):
     pprint(ctx.config, indent=4)
     print("-------------------------")
     pprint(dict(ctx.config), indent=4)
-    # return 1/0
 
 
 # -----------------------------------------------------------------------------
@@ -345,27 +319,15 @@ def config(ctx):
 # -----------------------------------------------------------------------------
 namespace = Collection(all, redo, init, test, clean, reinit, rebuild, config)
 namespace.add_task(build, default=True)
-# namespace.add_task(all)
-# namespace.add_task(redo)
-# namespace.add_task(init)
-# namespace.add_task(test)
-# namespace.add_task(clean)
-# namespace.add_task(reinit)
-# namespace.add_task(rebuild)
-# namespace.add_task(config)
 
 TASKS_CONFIG_DEFAULTS = {
     "cmake_generator": None,
     "cmake_toolchain": None,
-    # "cmake_defines": [],
     "build_dir_schema": "build.{BUILD_CONFIG}",
     "build_config": "debug",
     "build_configs": [],
     "build_configs_map": {},
     "projects": [],
-    # DISABLED: "build_config_aliases": {
-    # DISABLED:     "default": "debug",
-    # DISABLED: },
 }
 namespace.configure(TASKS_CONFIG_DEFAULTS)
 
