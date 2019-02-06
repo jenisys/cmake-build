@@ -36,8 +36,8 @@ The first is automatically execute if it is needed.
     $ cmake-build
 
     # -- EXAMPLE: Specify the cmake.generator on command-line (override config-file).
-    # HINT: Complicate CMake generator names (multiple words) are also available as short aliases.
-    $ cmake-build --generator=ninja
+    # HINT: Complicated CMake generator names (multiple words) are also available as short aliases.
+    $ cmake-build build --generator=ninja
     ...
     $ cmake-build build --generator=make
     ...
