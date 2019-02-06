@@ -40,7 +40,6 @@ from invoke.util import cd
 from . import _tasklet_cleanup as cleanup
 from . import test
 from cmake_build import tasks as cmake_build
-# DISABLED: from . import cmake
 # DISABLED: from . import docs
 # DISABLED: from . import release
 
@@ -79,8 +78,6 @@ namespace.add_task(reinit)
 namespace.add_task(cmake_examples)
 namespace.add_collection(Collection.from_module(test))
 namespace.add_collection(Collection.from_module(cmake_build, name="cmake_build"))
-# namespace.add_task(cmake.test, name="ctest")
-# namespace.add_collection(Collection.from_module(cmake))
 # DISABLED: namespace.add_collection(Collection.from_module(docs))
 # DISABLED: namespace.add_collection(Collection.from_module(release))
 
