@@ -13,17 +13,48 @@ import six
 # -----------------------------------------------------------------------------
 # CMAKE PROJECT CONFIGURATION:
 # -----------------------------------------------------------------------------
+# Generators
+#
+# The following generators are available on this platform:
+#   Unix Makefiles               = Generates standard UNIX makefiles.
+#   Ninja                        = Generates build.ninja files.
+#   Xcode                        = Generate Xcode project files.
+#   CodeBlocks - Ninja           = Generates CodeBlocks project files.
+#   CodeBlocks - Unix Makefiles  = Generates CodeBlocks project files.
+#   CodeLite - Ninja             = Generates CodeLite project files.
+#   CodeLite - Unix Makefiles    = Generates CodeLite project files.
+#   Sublime Text 2 - Ninja       = Generates Sublime Text 2 project files.
+#   Sublime Text 2 - Unix Makefiles
+#                                = Generates Sublime Text 2 project files.
+#   Kate - Ninja                 = Generates Kate project files.
+#   Kate - Unix Makefiles        = Generates Kate project files.
+#   Eclipse CDT4 - Ninja         = Generates Eclipse CDT 4.0 project files.
+#   Eclipse CDT4 - Unix Makefiles= Generates Eclipse CDT 4.0 project files.
+#
 # BUILD_DIR = "build"
 BUILD_DIR_SCHEMA = "build.{BUILD_CONFIG}"
 BUILD_CONFIG_DEFAULT = "default"
 
 CMAKE_DEFAULT_GENERATOR = "ninja"  # EMPTY means Makefiles ('Unix Makefiles')
 CMAKE_GENERATOR_ALIAS_MAP = {
-    "ninja": "Ninja",
-    "make": "Unix Makefiles",
-    "xcode": "Xcode",
-    "eclipse.ninja": "Eclipse CDT4 - Ninja",
-    "eclipse.make":  "Eclipse CDT4 - Unix Makefiles",
+    "ninja":    "Ninja",
+    "make":     "Unix Makefiles",
+    "xcode":    "Xcode",
+    "CodeBlocks":       "CodeBlocks - Ninja",
+    "CodeBlocks.ninja": "CodeBlocks - Ninja",
+    "CodeBlocks.make":  "CodeBlocks - Unix Makefiles",
+    "CodeLite":         "CodeLite - Ninja",
+    "CodeLite.ninja":   "CodeLite - Ninja",
+    "CodeLite.make":    "CodeLite - Unix Makefiles",
+    "eclipse":          "Eclipse CDT4 - Ninja",
+    "eclipse.ninja":    "Eclipse CDT4 - Ninja",
+    "eclipse.make":     "Eclipse CDT4 - Unix Makefiles",
+    "kate":             "Kate - Ninja",
+    "kate.ninja":       "Kate - Ninja",
+    "kate.make":        "Kate - Unix Makefiles",
+    "sublime2":         "Sublime Text 2 - Ninja",
+    "sublime2.ninja":   "Sublime Text 2 - Ninja",
+    "sublime2.make":    "Sublime Text 2 - Unix Makefiles",
 }
 
 CMAKE_BUILD_TYPES = [
