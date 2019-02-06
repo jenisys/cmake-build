@@ -61,13 +61,8 @@ projects:
   - examples/program_hello
   - examples/library_hello
 
-
-
-# -- DISABLED:
-# behave_test:
-#    scopes:
-#      - features
-#      - tools/test-features
-#      - issue.features
-#    args: features tools/test-features issue.features
+behave_test:
+    scopes:
+      - features
+    args: features
 
