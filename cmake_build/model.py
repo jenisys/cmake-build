@@ -400,6 +400,8 @@ class CMakeProject(object):
                   project_build_dir, cmake_generator))
 
             cmake_init_options = self.make_cmake_init_options(cmake_generator)
+            if args:
+                cmake_init_options += " {0}".format(args)
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
             relpath_to_project_dir = posixpath_normpath(relpath_to_project_dir)
             ctx.run("cmake {options} {relpath}".format(
@@ -430,7 +432,7 @@ class CMakeProject(object):
             self.ctx.run("cmake --build . {0}".format(cmake_build_args).strip())
             print()
 
-    def clean(self, init_args=None):
+    def clean(self, args=None, init_args=None):
         """Clean the build artifacts (but: preserve CMake init)"""
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if not self.initialized:
@@ -440,9 +442,11 @@ class CMakeProject(object):
         # -- ALTERNATIVE: self.build(args="clean", ensure_init=False)
         self.ensure_init(args=init_args)
         print("CMAKE-CLEAN: {0}".format(project_build_dir))
-        cmake_build_args = "clean"
+        cmake_clean_args = "clean"
+        if args:
+            cmake_clean_args = "clean {args}".format(args=args)
         with cd(self.project_build_dir):
-            self.ctx.run("cmake --build . -- {0}".format(cmake_build_args))
+            self.ctx.run("cmake --build . -- {0}".format(cmake_clean_args))
 
     def reinit(self, args=None):
         self.cleanup()
@@ -478,12 +482,15 @@ class CMakeBuildRunner(object):
         self.cmake_projects = cmake_projects or []
         self.default_target = target or "build"
 
-    def execute_target(self, target):
+    def execute_target(self, target, args=None, init_args=None, **kwargs):
         target = target or self.default_target
         for cmake_project in self.cmake_projects:
             project_target_func = getattr(cmake_project, target, None)
             if project_target_func:
-                project_target_func()
+                if args or init_args or kwargs:
+                    project_target_func(args=args, init_args=init_args, **kwargs)
+                else:
+                    project_target_func()
             else:
                 print("CMAKE-BUILD: Skip target={0} for {1} (not-supported)".format(
                     target, posixpath_normpath(cmake_project.project_dir)
@@ -500,24 +507,24 @@ class CMakeBuildRunner(object):
     def run(self, target=None):
         self.execute_target(target)
 
-    def init(self):
-        self.execute_target("init")
+    def init(self, args=None):
+        self.execute_target("init", args=args)
 
-    def build(self):
-        self.execute_target("build")
+    def build(self, args=None, init_args=None):
+        self.execute_target("build", args=args, init_args=init_args)
 
-    def test(self):
-        self.execute_target("test")
+    def test(self, args=None, init_args=None):
+        self.execute_target("test", args=args, init_args=init_args)
 
-    def reinit(self):
+    def reinit(self, args=None):
         self.execute_target("cleanup")
-        self.execute_target("init")
+        self.execute_target("init", args=args)
 
-    def rebuild(self):
-        self.execute_target("rebuild")
+    def rebuild(self, args=None, init_args=None):
+        self.execute_target("rebuild", args=args, init_args=init_args)
 
-    def clean(self):
-        self.execute_target("cleanup")
+    def clean(self, args=None):
+        self.execute_target("clean", args=args)
 
     def cleanup(self):
         self.execute_target("cleanup")

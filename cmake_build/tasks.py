@@ -189,7 +189,8 @@ def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
     build_config = make_build_config(ctx, build_config)
     cmake_project = CMakeProject(ctx, project_dir, build_config=build_config,
                                  cmake_generator=cmake_generator)
-    print("IGNORE-ARGS: %r" % kwargs)
+    if kwargs:
+        print("cmake_project: IGNORED_ARGS=%r" % kwargs)
     return cmake_project
 
 
@@ -209,18 +210,19 @@ def make_cmake_projects(ctx, projects, build_config=None, verbose=True, **kwargs
 def init(ctx, project="all", build_config=None, generator=None, args=None):
     """Initialize all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         init_args=args, generator=generator)
+                                         generator=generator)
+                                         # DISABLED: init_args=args, generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.init()
+        cmake_project.init(args=args)
 
 
 @task
 def build(ctx, project="all", build_config=None, generator=None, args=None, init_args=None):
     """Build one or all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         args=args, init_args=init_args, generator=generator)
+                                         generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.build()
+        cmake_project.build(args=args, init_args=init_args)
 
 
 
@@ -228,18 +230,18 @@ def build(ctx, project="all", build_config=None, generator=None, args=None, init
 def test(ctx, project="all", build_config=None, generator=None, args=None, init_args=None):
     """Test one or all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         args=args, init_args=init_args, generator=generator)
+                                         generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.test()
+        cmake_project.test(args=args, init_args=init_args)
 
 
 @task
-def clean(ctx, project="all", build_config=None, dry_run=False):
+def clean(ctx, project="all", build_config=None, args=None, dry_run=False):
     """Cleanup all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          verbose=False)
     for cmake_project in cmake_projects:
-        cmake_project.clean()     # TODO: dry_run=dry_run)
+        cmake_project.clean(args=args)     # TODO: dry_run=dry_run)
 
 
 @task
@@ -251,7 +253,7 @@ def reinit(ctx, project="all", build_config=None, generator=None, args=None, dry
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
         cmake_runner.set_cmake_generator(generator)
-    cmake_runner.reinit()    # PREPARED, TODO: dry_run=dry_run)
+    cmake_runner.reinit(args=args)    # PREPARED, TODO: dry_run=dry_run)
 
 
 @task
@@ -260,12 +262,12 @@ def rebuild(ctx, project="all", build_config=None, generator=None, args=None, in
     # build(ctx, project=project, build_config=build_config, args="clean", generator=generator, init_args=init_args)
     # build(ctx, project=project, build_config=build_config, args=args, generator=generator, init_args=init_args)
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         init_args=args, verbose=False)
+                                         verbose=False)
     cmake_runner = CMakeBuildRunner(cmake_projects)
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
         cmake_runner.set_cmake_generator(generator)
-    cmake_runner.rebuild()    # PREPARED, TODO: dry_run=dry_run)
+    cmake_runner.rebuild(args=args, init_args=init_args)    # PREPARED, TODO: dry_run=dry_run)
 
 
 @task
@@ -282,8 +284,8 @@ def all(ctx, project="all", generator=None, build_config=None, args=None, init_a
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          init_args=args, verbose=False)
     for cmake_project in cmake_projects:
-        cmake_project.build()
-        cmake_project.test()
+        cmake_project.build(args=args, init_args=init_args)
+        cmake_project.test(args=test_args)
 
 @task
 def redo(ctx, project="all", build_config=None, generator=None, args=None, init_args=None, test_args=None):
@@ -299,9 +301,9 @@ def redo(ctx, project="all", build_config=None, generator=None, args=None, init_
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator, init_args=args)
     for cmake_project in cmake_projects:
-        cmake_project.reinit()
-        cmake_project.build()
-        cmake_project.test()
+        cmake_project.reinit(args=init_args)
+        cmake_project.build(args=args)
+        cmake_project.test(args=test_args)
 
 
 def cmake_build_show_projects(projects):
