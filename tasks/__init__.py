@@ -36,7 +36,8 @@ from invoke import task, Collection
 from invoke.util import cd
 
 # -- TASK-LIBRARY:
-from . import clean
+# from . import clean
+from . import _tasklet_cleanup as cleanup
 from . import test
 from cmake_build import tasks as cmake_build
 # DISABLED: from . import cmake
@@ -49,13 +50,13 @@ from cmake_build import tasks as cmake_build
 @task
 def init(ctx):
     """Initialize everything."""
-    cmake.init(ctx)
+    cmake_build.init(ctx)
 
 
 @task
 def reinit(ctx):
     """Reinitialize everything."""
-    clean.clean(ctx)
+    cleanup.clean(ctx)
     init(ctx)
 
 @task(aliases=["examples"])
@@ -70,8 +71,9 @@ def cmake_examples(ctx, build_config=None):
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
 namespace = Collection()
-namespace.add_task(clean.clean)
-namespace.add_task(clean.clean_all)
+# DISABLED: namespace.add_task(clean.clean)
+# DISABLED: namespace.add_task(clean.clean_all)
+namespace.add_collection(Collection.from_module(cleanup), name="cleanup")
 namespace.add_task(init)
 namespace.add_task(reinit)
 namespace.add_task(cmake_examples)
@@ -82,8 +84,10 @@ namespace.add_collection(Collection.from_module(cmake_build, name="cmake_build")
 # DISABLED: namespace.add_collection(Collection.from_module(docs))
 # DISABLED: namespace.add_collection(Collection.from_module(release))
 
+cleanup.cleanup_tasks.add_task(cleanup.clean_python)
+
 # -- INJECT: clean configuration into this namespace
-namespace.configure(clean.namespace.configuration())
+namespace.configure(cleanup.namespace.configuration())
 if sys.platform.startswith("win"):
     # -- OVERRIDE SETTINGS: For platform=win32, ... (Windows)
     from ._compat_shutil import which
