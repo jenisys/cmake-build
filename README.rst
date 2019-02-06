@@ -61,33 +61,32 @@ Goals of `cmake-build`:
 Configuration File Support
 -----------------------------------------------------------------------------
 
-File "$WORKDIR/cmake-build_config.yaml":
+File "$WORKDIR/cmake_build.yaml":
 
 .. code-block:: yaml
 
-    generator: ninja
+    cmake_generator: ninja
     build_dir_schema:    "build/{BUILD_CONFIG}"
     build_config: Linux_arm64_Debug
     build_configs:
-        # -- HOST-COMPILE BUILD-CONFIGS (normally):
+        # -- HOST-COMPILE BUILD-CONFIGS (example):
         - Linux_x86_64_Debug:
-            cmake_defines:
-              - CMAKE_BUILD_TYPE=Debug
+            # -- HINT: AUTO-DISCOVERED
+            # cmake_build_type: Debug
 
         - Linux_x86_64_Release:
-            cmake_defines:
-              - CMAKE_BUILD_TYPE=Release
+            cmake_build_type: MinSizeRel
 
-        # -- CROSS-COMPILE BUILD-CONFIGS (normally):
+        # -- CROSS-COMPILE BUILD-CONFIGS (example):
         - Linux_arm64_Debug:
             toolchain: cmake/toolchain/linux_gcc_arm64.cmake
+            cmake_build_type: MinSizeDbg
             cmake_defines:
-              - CMAKE_BUILD_TYPE=MinSizeDbg
+              - FOO=foo
 
         - Linux_arm64_Release:
             toolchain: cmake/toolchain/linux_gcc_arm64.cmake
-            cmake_defines:
-              - CMAKE_BUILD_TYPE=Release
+            cmake_build_type: MinSizeRel
 
     projects:
       - examples/program_hello
