@@ -307,7 +307,7 @@ def config(ctx):
         ctx.config.build_configs_map = build_configs_map
 
     print("cmake_generator: %s" % ctx.config.cmake_generator)
-    cmake_build_show_build_configs(config.build_configs)
+    cmake_build_show_build_configs(ctx.config.build_configs)
     cmake_build_show_projects(ctx.config.projects)
     pprint(ctx.config, indent=4)
     print("-------------------------")
