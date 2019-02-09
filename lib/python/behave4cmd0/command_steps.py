@@ -99,6 +99,20 @@ def step_use_curdir_as_working_directory(context):
     context.workdir = os.path.abspath(".")
     command_util.ensure_workdir_exists(context)
 
+@step(u'I use the directory "{directory}" as working directory')
+def step_use_directory_as_working_directory(context, directory):
+    """Uses the directory as new working directory"""
+    command_util.ensure_context_attribute_exists(context, "workdir", None)
+    current_workdir = context.workdir
+    if not current_workdir:
+        current_workdir = os.getcwd()
+    if not os.path.isabs(directory):
+        workdir = os.path.join(current_workdir, directory)
+        workdir = os.path.abspath(workdir)
+
+    context.workdir = workdir
+    command_util.ensure_workdir_exists(context)
+
 # -----------------------------------------------------------------------------
 # STEPS: Create files with contents
 # -----------------------------------------------------------------------------
