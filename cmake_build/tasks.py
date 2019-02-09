@@ -29,11 +29,19 @@ from path import Path
 # -----------------------------------------------------------------------------
 # from invoke.exceptions import Failure
 from invoke import task, Collection
-from invoke.exceptions import Exit
+from invoke.exceptions import Failure, Exit
 
 # -- TASK-LIBRARY:
 from .tasklet.cleanup import cleanup_tasks
 from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
+
+
+# -----------------------------------------------------------------------------
+# CONSTANTS:
+# -----------------------------------------------------------------------------
+BUILD_CONFIG_DEFAULT = "debug"
+BUILD_CONFIG_DEFAULT_MAP = dict(debug={}, release={})
+BUILD_CONFIG_DEFAULT_MAP[BUILD_CONFIG_DEFAULT] = {}
 
 
 # -----------------------------------------------------------------------------
@@ -58,7 +66,8 @@ from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
 #         pass
 
 def make_build_configs_map(build_configs):
-    build_configs_map = {}
+    # build_configs_map = dict(BUILD_CONFIG_DEFAULT=dict())
+    build_configs_map = BUILD_CONFIG_DEFAULT_MAP.copy()
     for build_config in build_configs:
         if isinstance(build_config, six.string_types):
             build_configs_map[build_config] = {}
@@ -73,13 +82,13 @@ def make_build_configs_map(build_configs):
     return build_configs_map
 
 
-def require_build_config_is_valid(ctx, build_config):
+def require_build_config_is_valid(ctx, build_config, strict=True):
     if not build_config:
-        build_config = ctx.config.build_config or "debug"
+        build_config = ctx.config.build_config or BUILD_CONFIG_DEFAULT
 
     build_configs = ctx.config.build_configs or []
     build_configs_map = ctx.config.get("build_configs_map", None)
-    if not build_configs_map:
+    if not build_configs_map or build_configs_map == BUILD_CONFIG_DEFAULT_MAP:
         build_configs_map = make_build_configs_map(build_configs)
         ctx.config.build_configs_map = build_configs_map
 
@@ -88,10 +97,20 @@ def require_build_config_is_valid(ctx, build_config):
         return True
 
     expected = ", ".join(sorted(list(build_configs_map.keys())))
-    message = "UNKNOWN-BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
-    print(message)
-    print(repr(ctx.config.build_configs_map))
+    message = "UNKNOWN BUILD-CONFIG: %s (expected: %s)" % (build_config, expected)
+    if not strict:
+        print(message)
+        return False
+
+    # -- STRICT MODE: Here and no further.
     raise Exit(message)
+    # raise Failure(message)
+
+
+def require_build_config_is_valid_or_none(ctx, build_config, strict=True):
+    if not build_config or build_config == BUILD_CONFIG_DEFAULT:
+        return True
+    return require_build_config_is_valid(ctx, build_config, strict=strict)
 
 
 def cmake_select_project_dirs(ctx, projects=None, verbose=False):
@@ -144,7 +163,7 @@ def make_build_config(ctx, name=None):
     return BuildConfig(name, build_config_data)
 
 
-def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
+def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwargs):
     if not ctx.config.build_configs_map:
         # -- LAZY-INIT: Build build_configs_map once from build_configs list.
         build_configs_map = make_build_configs_map(ctx.config.build_configs)
@@ -153,9 +172,9 @@ def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
         # CMakeBuildConfigNormalizer.normalize(ctx.config)
 
     cmake_generator = kwargs.pop("generator", None)
-    build_config_default = ctx.config.build_config or "debug"
+    build_config_default = ctx.config.build_config or BUILD_CONFIG_DEFAULT
     build_config = build_config or build_config_default
-    require_build_config_is_valid(ctx, build_config)
+    require_build_config_is_valid_or_none(ctx, build_config, strict=strict)
 
     build_config = make_build_config(ctx, build_config)
     cmake_project = CMakeProject(ctx, project_dir, build_config=build_config,
@@ -165,11 +184,15 @@ def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
     return cmake_project
 
 
-def make_cmake_projects(ctx, projects, build_config=None, verbose=True, **kwargs):
+def make_cmake_projects(ctx, projects, build_config=None, strict=None,
+                        verbose=True, **kwargs):
+    if strict is None:
+        strict = True
     project_dirs = cmake_select_project_dirs(ctx, projects, verbose=verbose)
     cmake_projects = []
     for project_dir in project_dirs:
-        cmake_project = make_cmake_project(ctx, project_dir, build_config, **kwargs)
+        cmake_project = make_cmake_project(ctx, project_dir, build_config,
+                                           strict=strict, **kwargs)
         cmake_projects.append(cmake_project)
     return cmake_projects
 
@@ -324,9 +347,9 @@ TASKS_CONFIG_DEFAULTS = {
     "cmake_generator": None,
     "cmake_toolchain": None,
     "build_dir_schema": "build.{BUILD_CONFIG}",
-    "build_config": "debug",
+    "build_config": BUILD_CONFIG_DEFAULT,
     "build_configs": [],
-    "build_configs_map": {},
+    "build_configs_map": {},    # -- AVOID-HERE: BUILD_CONFIG_DEFAULT_MAP.copy(),
     "projects": [],
 }
 namespace.configure(TASKS_CONFIG_DEFAULTS)

@@ -6,16 +6,18 @@ from behave4cmake_build.cmake_build_util import make_cmake_project
 from path import Path
 
 
-@given(u'I use the CMake project "{project_dir}" with build_config="{build_config}"')
-def step_given_i_use_cmake_project_with_build_config(ctx, project_dir, build_config=None):
+@step(u'I use the CMake project "{project_dir}" with build_config="{build_config}"')
+def step_i_use_cmake_project_with_build_config(ctx, project_dir, build_config=None):
     workdir = Path(ctx.workdir or ".")
     workpath_project_dir = workdir/project_dir
     ctx.cmake_current_project = make_cmake_project(None, workpath_project_dir,
                                                    build_config=build_config)
 
-@given(u'I use the CMake project "{project_dir}"')
-def step_given_i_use_cmake_project(ctx, project_dir):
-    step_given_i_use_cmake_project_with_build_config(ctx, project_dir)
+
+@step(u'I use the CMake project "{project_dir}"')
+def step_i_use_cmake_project(ctx, project_dir):
+    step_i_use_cmake_project_with_build_config(ctx, project_dir)
+
 
 @then(u'the CMake project is initialized')
 def step_then_cmake_project_is_initialized(ctx):

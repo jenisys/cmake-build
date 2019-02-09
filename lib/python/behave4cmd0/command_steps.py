@@ -457,6 +457,7 @@ def step_file_named_filename_exists(context, filename):
     step_file_named_filename_should_exist(context, filename)
 
 @step(u'a file named "{filename}" does not exist')
+@step(u'the file named "{filename}" does not exist')
 def step_file_named_filename_does_not_exist(context, filename):
     """
     Verifies that a file with this filename does not exist.
@@ -479,6 +480,16 @@ def step_file_named_filename_should_not_exist(context, filename):
     command_util.ensure_workdir_exists(context)
     filename_ = pathutil.realpath_with_context(filename, context)
     assert_that(not os.path.exists(filename_))
+
+@step(u'I remove the file "{filename}"')
+def step_remove_file(context, filename):
+    path_ = filename
+    if not os.path.isabs(filename):
+        path_ = os.path.join(context.workdir, os.path.normpath(filename))
+    if os.path.exists(path_) and os.path.isfile(path_):
+        os.remove(path_)
+    assert_that(not os.path.isfile(path_))
+
 
 # -----------------------------------------------------------------------------
 # STEPS FOR FILE CONTENTS:

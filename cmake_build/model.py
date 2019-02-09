@@ -11,6 +11,7 @@ from __future__ import absolute_import, print_function
 # -----------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------
+import os
 from invoke.util import cd
 from path import Path
 from .cmake_util import \
@@ -31,6 +32,7 @@ CMAKE_CONFIG_DEFAULTS = {
     "cmake_defines": [],
     "cmake_args": [],
 }
+CMAKE_BUILD_VERBOSE = (os.environ.get("CMAKE_BUILD_VERBOSE", None) == "yes")
 
 
 # -----------------------------------------------------------------------------
@@ -367,6 +369,16 @@ class CMakeProject(object):
 
     @property
     def initialized(self):
+        verbose = CMAKE_BUILD_VERBOSE
+        if verbose:
+            print("initialized.project_build_dir:     {0} (exists: {1})".format(
+                self.project_build_dir.relpath(),
+                self.project_build_dir.exists()
+            ))
+            print("initialized.cmake_build_data_file: {0} (exists: {1})".format(
+                self.cmake_build_data_filename.relpath(),
+                self.has_cmake_build_data_file()
+            ))
         return self.project_build_dir.exists() and self.has_cmake_build_data_file()
 
     def needs_reinit(self):
