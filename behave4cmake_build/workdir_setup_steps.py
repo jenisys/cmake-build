@@ -13,6 +13,7 @@ def step_copytree_to_workdir_with_destdir(ctx, source_dir, dest_dir):
     source_dir = Path(source_dir).normpath()
     dest_dir = Path(dest_dir).normpath()
     workpath_dest_dir = workdir/Path(dest_dir)
+    workpath_dest_dir = workpath_dest_dir.normpath()
 
     assert source_dir.isdir(), "ENSURE: source_dir=%s exists" % source_dir
     workpath_dest_dir.rmtree_p()

@@ -34,6 +34,7 @@ def step_then_cmake_project_is_not_initialized(ctx):
         "ENSURE: cmake_project=%s is not initialized" % cmake_current_project.project_dir.relpath()
 
 
+@then(u'the CMake project is initialized for build_config="{build_config}"')
 @then(u'the CMake project for build_config="{build_config}" is initialized')
 def step_then_cmake_project_with_build_config_is_initialized(ctx, build_config):
     step_then_cmake_project_is_initialized(ctx)

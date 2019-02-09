@@ -32,7 +32,7 @@ from invoke import task, Collection
 from invoke.exceptions import Failure, Exit
 
 # -- TASK-LIBRARY:
-from .tasklet.cleanup import cleanup_tasks
+from .tasklet.cleanup import cleanup_tasks, config_add_cleanup_dirs
 from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
 
 
@@ -126,6 +126,14 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
     else:
         raise ValueError("projects=%r with type=%s" % (projects, type(projects)))
 
+    if not project_dirs:
+        curdir = Path(".").abspath()
+        if Path("CMakeLists.txt").isfile():
+            print("CMAKE-BUILD: Using . (as default cmake.project; cwd={0})".format(curdir))
+            project_dirs = [Path(".")]
+        else:
+            print("CMAKE-BUILD: Ignore . (not a cmake.project; cwd={0})".format(curdir))
+
     missing_project_dirs = []
     for project_dir in project_dirs:
         project_dir = Path(project_dir)
@@ -136,6 +144,7 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
                 missing_project_dirs.append(project_dir)
             continue
         yield project_dir
+
     # -- FINALLY:
     if len(missing_project_dirs) == len(project_dirs):
         if missing_project_dirs:
@@ -163,6 +172,17 @@ def make_build_config(ctx, name=None):
     return BuildConfig(name, build_config_data)
 
 
+def show_cmake_project_ignored_args(cmake_project_kwargs):
+    if not cmake_project_kwargs:
+        return
+
+    # -- NORMAL CASE:
+    for name, value in six.iteritems(cmake_project_kwargs):
+        if value is None:
+            continue
+        print("cmake_project: IGNORED_ARGS: %s=%r" % (name, value))
+
+
 def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwargs):
     if not ctx.config.build_configs_map:
         # -- LAZY-INIT: Build build_configs_map once from build_configs list.
@@ -179,8 +199,7 @@ def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwar
     build_config = make_build_config(ctx, build_config)
     cmake_project = CMakeProject(ctx, project_dir, build_config=build_config,
                                  cmake_generator=cmake_generator)
-    if kwargs:
-        print("cmake_project: IGNORED_ARGS=%r" % kwargs)
+    show_cmake_project_ignored_args(kwargs)
     return cmake_project
 
 
@@ -353,8 +372,12 @@ TASKS_CONFIG_DEFAULTS = {
     "projects": [],
 }
 namespace.configure(TASKS_CONFIG_DEFAULTS)
-
+namespace.configuration({})
 
 # -- REGISTER CLEANUP TASKS:
 cleanup_tasks.add_task(clean, "clean_cmake-build")
-cleanup_tasks.configure(namespace.configuration())
+cleanup_tasks.configure(namespace.configuration({}))
+
+# -- REGISTER DEFAULT CLEANUP_DIRS (if configfile is not provided):
+# HINT: build_dir_schema: build.{BUILD_CONFIG}
+config_add_cleanup_dirs(["build.*"])
