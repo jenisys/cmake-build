@@ -39,7 +39,7 @@ EXAMPLE::
     # -- FILE: tasks/docs.py
     from __future__ import absolute_import
     from invoke import task, Collection
-    from invoke_tasklet_cleanup import cleanup_tasks, cleanup_dirs
+    from tasklet_cleanup import cleanup_tasks, cleanup_dirs
 
     @task
     def clean(ctx, dry_run=False):
@@ -108,6 +108,10 @@ def cleanup_dirs(patterns, dry_run=False, workdir="."):
                 warn2_counter += 1
                 continue
 
+            if not directory.isdir():
+                print("RMTREE: %s (SKIPPED: Not a directory)" % directory)
+                continue
+
             if dry_run:
                 print("RMTREE: %s (dry-run)" % directory)
             else:
@@ -131,6 +135,9 @@ def cleanup_files(patterns, dry_run=False, workdir="."):
         for file_ in path_glob(file_pattern, current_dir):
             if file_.abspath().startswith(python_basedir):
                 # -- PROTECT CURRENTLY USED VIRTUAL ENVIRONMENT:
+                continue
+            if not file_.isfile():
+                print("REMOVE: %s (SKIPPED: Not a file)" % file_)
                 continue
 
             if dry_run:
@@ -219,10 +226,8 @@ def clean_python(ctx, dry_run=False):
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
-# namespace = Collection(clean, clean_all)
 namespace = Collection(clean_all, clean_python)
 namespace.add_task(clean, default=True)
-
 namespace.configure({
     "clean": {
         "directories": [],

@@ -108,6 +108,10 @@ def cleanup_dirs(patterns, dry_run=False, workdir="."):
                 warn2_counter += 1
                 continue
 
+            if not directory.isdir():
+                print("RMTREE: %s (SKIPPED: Not a directory)" % directory)
+                continue
+
             if dry_run:
                 print("RMTREE: %s (dry-run)" % directory)
             else:
@@ -131,6 +135,9 @@ def cleanup_files(patterns, dry_run=False, workdir="."):
         for file_ in path_glob(file_pattern, current_dir):
             if file_.abspath().startswith(python_basedir):
                 # -- PROTECT CURRENTLY USED VIRTUAL ENVIRONMENT:
+                continue
+            if not file_.isfile():
+                print("REMOVE: %s (SKIPPED: Not a file)" % file_)
                 continue
 
             if dry_run:
@@ -192,7 +199,7 @@ def clean(ctx, dry_run=False):
     cleanup_files(files, dry_run=dry_run)
 
 
-@task(name="clean-all", aliases=("distclean",))
+@task(name="all", aliases=("distclean",))
 def clean_all(ctx, dry_run=False):
     """Clean up everything, even the precious stuff.
     NOTE: clean task is executed first.
@@ -205,7 +212,7 @@ def clean_all(ctx, dry_run=False):
     clean(ctx, dry_run=dry_run)
 
 
-@task
+@task(name="python")
 def clean_python(ctx, dry_run=False):
     """Cleanup python related files/dirs: *.pyc, *.pyo, ..."""
     # MAYBE NOT: "**/__pycache__"
@@ -219,7 +226,7 @@ def clean_python(ctx, dry_run=False):
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
-namespace = Collection(clean_all)
+namespace = Collection(clean_all, clean_python)
 namespace.add_task(clean, default=True)
 namespace.configure({
     "clean": {
