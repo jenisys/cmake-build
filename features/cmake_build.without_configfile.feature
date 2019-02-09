@@ -14,6 +14,7 @@ Feature: cmake-build without Configuration File
     And I copy the CMake project "examples/library_hello/" to the working directory
     And I use the CMake project "library_hello"
 
+
   Scenario: cmake-build works without configfile if CMakeLists.txt file exists
     Given a file named "library_hello/CMakeLists.txt" exists
     And   a file named "cmake_build.yaml" does not exist
@@ -40,10 +41,10 @@ Feature: cmake-build without Configuration File
     When I run "cmake-build init -p library_hello"
     Then it should fail with:
       """
-      CMake Error: The source directory "/Users/jens/se/cmake-build/__WORKDIR__/library_hello" does not appear to contain CMakeLists.txt.
+      CMake Error: The source directory "{__WORKDIR__}/library_hello" does not appear to contain CMakeLists.txt.
       """
 
-  Scenario: cmake-build works without configfile and build-config=debug
+  Scenario: cmake-build works without configfile using build-config=debug
 
     INTENTION: Support build-config=debug even when no configfile exists.
 
@@ -64,8 +65,7 @@ Feature: cmake-build without Configuration File
       """
     And the CMake project is initialized
 
-
-  Scenario: cmake-build works without configfile and build-config=release
+  Scenario: cmake-build works without configfile using build-config=release
 
     INTENTION: Support build-config=release even when no configfile exists.
 
@@ -87,8 +87,7 @@ Feature: cmake-build without Configuration File
     And I use the CMake project "library_hello" with build_config="release"
     And the CMake project is initialized
 
-
-  Scenario: cmake-build fails without configfile if other build-config is used
+  Scenario: cmake-build fails without configfile using other build-config
 
     ENSURE: Only build-config= debug, release work automatically without configfile.
 
