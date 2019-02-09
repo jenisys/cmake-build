@@ -219,27 +219,42 @@ def make_cmake_projects(ctx, projects, build_config=None, strict=None,
 # -----------------------------------------------------------------------------
 # TASKS:
 # -----------------------------------------------------------------------------
-@task
+TASK_ARGS_HELP_MAP = {
+    "project": 'Project directory or "all" (for all projects) (as path)',
+    "build-config": "Build configuration to use: debug, release, ... (as string)",
+    "generator": "cmake.generator to use: ninja, make, ... (as string)",
+    "args": "Arguments to pass (as string)",
+}
+TASK_ARGS_HELP_MAP_WITH_INIT_ARGS = {
+    "init-args": "CMake args to use to initialize the build_dir."
+}
+TASK_ARGS_HELP_MAP_WITH_INIT_ARGS.update(TASK_ARGS_HELP_MAP)
+
+
+@task(help=TASK_ARGS_HELP_MAP)
 def init(ctx, project="all", build_config=None, generator=None, args=None):
-    """Initialize all cmake projects."""
+    """Initialize one or all cmake project(s).
+    This means that the project build_dir is created and the build scripts
+    are generated with CMake for this build configuration.
+    """
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
         cmake_project.init(args=args)
 
 
-@task
+@task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 def build(ctx, project="all", build_config=None, generator=None,
           args=None, init_args=None):
-    """Build one or all cmake projects."""
+    """Build one or all cmake project(s)."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
         cmake_project.build(args=args, init_args=init_args)
 
 
-
-@task
+@task(aliases=["ctest"],
+      help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 def test(ctx, project="all", build_config=None, generator=None,
          args=None, init_args=None):
     """Test one or all cmake projects."""
@@ -249,17 +264,17 @@ def test(ctx, project="all", build_config=None, generator=None,
         cmake_project.test(args=args, init_args=init_args)
 
 
-@task
+@task(help=TASK_ARGS_HELP_MAP)
 def clean(ctx, project="all", build_config=None, args=None,
           dry_run=False):
-    """Cleanup all cmake projects."""
+    """Clean one or cmake project(s) by removing the build artifacts."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          verbose=False)
     for cmake_project in cmake_projects:
         cmake_project.clean(args=args)     # MAYBE: dry_run=dry_run)
 
 
-@task
+@task(help=TASK_ARGS_HELP_MAP)
 def reinit(ctx, project="all", build_config=None, generator=None, args=None,
            dry_run=False):
     """Reinit cmake projects (performs: cleanup, init)."""
@@ -272,10 +287,10 @@ def reinit(ctx, project="all", build_config=None, generator=None, args=None,
     cmake_runner.reinit(args=args)    # PREPARED, TODO: dry_run=dry_run)
 
 
-@task
+@task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 def rebuild(ctx, project="all", build_config=None, generator=None,
             args=None, init_args=None):
-    """Rebuild one or all CMake projects (performs: clean, build)."""
+    """Rebuild one or all cmake projects (performs: clean, build)."""
     cmake_projects = make_cmake_projects(ctx, project,
                                          build_config=build_config,
                                          verbose=False)
@@ -287,27 +302,29 @@ def rebuild(ctx, project="all", build_config=None, generator=None,
     # PREPARED, TODO: dry_run=dry_run)
 
 
-@task
-def all(ctx, project="all", generator=None, build_config=None,
-        args=None, init_args=None, test_args=None):
-    """Performs multiple stsps for one (or more) projects:
+# @task(name="all")
+# def build_all(ctx, project="all", generator=None, build_config=None,
+#         args=None, init_args=None, test_args=None):
+#     """Performs multiple stsps for one (or more) projects:
+#
+#     - cmake.init
+#     - cmake.build
+#     - cmake.test (= ctest)
+#     """
+#     cmake_projects = make_cmake_projects(ctx, project,
+#                                          build_config=build_config,
+#                                          init_args=args,
+#                                          verbose=False)
+#     for cmake_project in cmake_projects:
+#         cmake_project.build(args=args, init_args=init_args)
+#         cmake_project.test(args=test_args)
 
-    - cmake.init
-    - cmake.build
-    - cmake.test (= ctest)
-    """
-    cmake_projects = make_cmake_projects(ctx, project,
-                                         build_config=build_config,
-                                         init_args=args,
-                                         verbose=False)
-    for cmake_project in cmake_projects:
-        cmake_project.build(args=args, init_args=init_args)
-        cmake_project.test(args=test_args)
-
-@task
+@task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 def redo(ctx, project="all", build_config=None, generator=None,
          args=None, init_args=None, test_args=None):
-    """Performs multiple steps for one (or more) projects:
+    """Performs multiple steps for one (or more) project(s).
+
+    Steps:
 
     - cmake.reinit
     - cmake.build
@@ -359,8 +376,9 @@ def config(ctx):
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
-namespace = Collection(all, redo, init, test, clean, reinit, rebuild, config)
+namespace = Collection(redo, init, test, clean, reinit, rebuild, config)
 namespace.add_task(build, default=True)
+# DISABLED: namespace.add_task(build_all)
 
 TASKS_CONFIG_DEFAULTS = {
     "cmake_generator": None,
