@@ -2,6 +2,7 @@
 
 from behave.tag_matcher import ActiveTagMatcher, setup_active_tag_values
 from behave4cmd0.setup_command_shell import setup_command_shell_processors4behave
+from cmake_build.host_platform import cmake_system, cmake_machine
 import platform
 import os.path
 import sys
@@ -22,7 +23,8 @@ active_tag_value_provider = {
     # # -- python.implementation: cpython, pypy, jython, ironpython
     # "python.implementation": platform.python_implementation().lower(),
     # "pypy":    str("__pypy__" in sys.modules).lower(),
-    # "os":      sys.platform,
+    "cmake_system":   cmake_system(),
+    "cmake_cpu":      cmake_machine()
 }
 active_tag_matcher = ActiveTagMatcher(active_tag_value_provider)
 
@@ -32,7 +34,7 @@ active_tag_matcher = ActiveTagMatcher(active_tag_value_provider)
 def before_all(context):
     # -- SETUP ACTIVE-TAG MATCHER (with userdata):
     # USE: behave -D browser=safari ...
-    # XXX-DISABLED: setup_active_tag_values(active_tag_value_provider, context.config.userdata)
+    setup_active_tag_values(active_tag_value_provider, context.config.userdata)
     setup_python_path()
     setup_command_shell_processors4cmake_build()
 

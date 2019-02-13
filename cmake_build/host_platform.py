@@ -38,11 +38,16 @@ def cmake_processor():
     return processor_name
 
 
-def cmake_machine():
+def cmake_cpu():
     """Host processor (or CPU) name."""
     # -- TOO GENERIC: processor_name = platform.processor()
     processor_name = platform.machine()
     return processor_name
+
+
+def cmake_machine():
+    """Alias for :func:`cmake_cpu()`"""
+    return cmake_cpu()
 
 
 def make_build_config_name(build_type=None, schema=None, **kwargs):
@@ -66,7 +71,7 @@ def make_build_config_name(build_type=None, schema=None, **kwargs):
     processor = kwargs.pop("PROCESSOR", None) or cmake_processor()
     if "CPU" not in kwargs:
         # -- ALIAS FOR: PROCESSOR
-        kwargs["CPU"] = cmake_machine()
+        kwargs["CPU"] = cmake_cpu()
     build_config_name = schema.format(SYSTEM=os_name,
                                       PROCESSOR=processor,
                                       BUILD_TYPE=build_type,
