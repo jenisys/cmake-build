@@ -34,14 +34,21 @@ from invoke.exceptions import Failure, Exit
 # -- TASK-LIBRARY:
 from .tasklet.cleanup import cleanup_tasks, config_add_cleanup_dirs
 from .model import CMakeProject, CMakeProjectData, CMakeBuildRunner, BuildConfig
+from .host_platform import make_build_config_name
 
 
 # -----------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------
+HOST_BUILD_CONFIG_DEBUG   = make_build_config_name(build_type="debug")
+HOST_BUILD_CONFIG_RELEASE = make_build_config_name(build_type="release")
 BUILD_CONFIG_DEFAULT = "debug"
 BUILD_CONFIG_DEFAULT_MAP = dict(debug={}, release={})
 BUILD_CONFIG_DEFAULT_MAP[BUILD_CONFIG_DEFAULT] = {}
+BUILD_CONFIG_HOST_MAP = {
+    HOST_BUILD_CONFIG_DEBUG: {},
+    HOST_BUILD_CONFIG_RELEASE: {},
+}
 
 
 # -----------------------------------------------------------------------------
@@ -68,6 +75,7 @@ BUILD_CONFIG_DEFAULT_MAP[BUILD_CONFIG_DEFAULT] = {}
 def make_build_configs_map(build_configs):
     # build_configs_map = dict(BUILD_CONFIG_DEFAULT=dict())
     build_configs_map = BUILD_CONFIG_DEFAULT_MAP.copy()
+    # DISABLED: build_configs_map.update(BUILD_CONFIG_HOST_MAP)
     for build_config in build_configs:
         if isinstance(build_config, six.string_types):
             build_configs_map[build_config] = {}
@@ -86,6 +94,11 @@ def require_build_config_is_valid(ctx, build_config, strict=True):
     if not build_config:
         build_config = ctx.config.build_config or BUILD_CONFIG_DEFAULT
 
+    if build_config == "auto" or build_config == "host_debug":
+        build_config = HOST_BUILD_CONFIG_DEBUG
+    elif build_config == "host_release":
+        build_config = HOST_BUILD_CONFIG_RELEASE
+
     build_configs = ctx.config.build_configs or []
     build_configs_map = ctx.config.get("build_configs_map", None)
     if not build_configs_map or build_configs_map == BUILD_CONFIG_DEFAULT_MAP:
@@ -93,6 +106,8 @@ def require_build_config_is_valid(ctx, build_config, strict=True):
         ctx.config.build_configs_map = build_configs_map
 
     build_config_data = build_configs_map.get(build_config)
+    if not build_config_data:
+        build_config_data = BUILD_CONFIG_HOST_MAP.get(build_config)
     if build_config_data is not None:
         return True
 
@@ -158,6 +173,11 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
 
 
 def make_build_config(ctx, name=None):
+    if name == "host_debug" or name == "auto":
+        name = HOST_BUILD_CONFIG_DEBUG
+    elif name == "host_release":
+        name = HOST_BUILD_CONFIG_RELEASE
+
     name = name or ctx.config.build_config or "default"
     build_config_defaults = CMakeProjectData().data
     build_config_defaults["cmake_generator"] = ctx.config.cmake_generator or "ninja"
