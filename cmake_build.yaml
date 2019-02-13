@@ -45,6 +45,9 @@ clean:
 clean_all:
     extra_directories:
       - .hypothesis
+      - .pytest_cache
+      - .tox
+      - .venv*
 
 run:
   echo: true
