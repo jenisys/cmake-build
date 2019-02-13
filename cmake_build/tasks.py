@@ -94,7 +94,7 @@ def require_build_config_is_valid(ctx, build_config, strict=True):
     if not build_config:
         build_config = ctx.config.build_config or BUILD_CONFIG_DEFAULT
 
-    if build_config == "auto" or build_config == "host_debug":
+    if build_config == "host_debug" or build_config == "auto":
         build_config = HOST_BUILD_CONFIG_DEBUG
     elif build_config == "host_release":
         build_config = HOST_BUILD_CONFIG_RELEASE
@@ -106,7 +106,7 @@ def require_build_config_is_valid(ctx, build_config, strict=True):
         ctx.config.build_configs_map = build_configs_map
 
     build_config_data = build_configs_map.get(build_config)
-    if not build_config_data:
+    if build_config_data is None:
         build_config_data = BUILD_CONFIG_HOST_MAP.get(build_config)
     if build_config_data is not None:
         return True
