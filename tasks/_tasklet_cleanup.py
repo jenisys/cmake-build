@@ -61,6 +61,7 @@ import sys
 import pathlib
 from invoke import task, Collection
 from invoke.executor import Executor
+from invoke.exceptions import Failure
 from path import Path
 
 
@@ -78,9 +79,17 @@ def execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=False):
     """
     # pylint: disable=redefined-outer-name
     executor = Executor(cleanup_tasks, ctx.config)
+    failure_count = 0
     for cleanup_task in cleanup_tasks.tasks:
-        print("CLEANUP TASK: %s" % cleanup_task)
-        executor.execute((cleanup_task, dict(dry_run=dry_run)))
+        try:
+            print("CLEANUP TASK: %s" % cleanup_task)
+            executor.execute((cleanup_task, dict(dry_run=dry_run)))
+        except Failure as e:
+            print("FAILURE in CLEANUP TASK: %s (GRACEFULLY-IGNORED)" % cleanup_task)
+            failure_count += 1
+
+    if failure_count:
+        print("CLEANUP TASKS: %d failures occured" % failure_count)
 
 
 def cleanup_dirs(patterns, dry_run=False, workdir="."):
