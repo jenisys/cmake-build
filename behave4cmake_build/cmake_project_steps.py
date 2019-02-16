@@ -19,6 +19,7 @@ def step_i_use_cmake_project(ctx, project_dir):
     step_i_use_cmake_project_with_build_config(ctx, project_dir)
 
 
+@given(u'the CMake project is initialized')
 @then(u'the CMake project is initialized')
 def step_then_cmake_project_is_initialized(ctx):
     assert ctx.cmake_current_project is not None, "ENSURE: ctx.cmake_current_project exists"
@@ -26,6 +27,7 @@ def step_then_cmake_project_is_initialized(ctx):
     assert cmake_current_project.initialized, \
         "ENSURE: cmake_project=%s is initialized" % cmake_current_project.project_dir.relpath()
 
+@given(u'the CMake project is not initialized')
 @then(u'the CMake project is not initialized')
 def step_then_cmake_project_is_not_initialized(ctx):
     assert ctx.cmake_current_project is not None, "ENSURE: ctx.cmake_current_project exists"
@@ -38,4 +40,10 @@ def step_then_cmake_project_is_not_initialized(ctx):
 @then(u'the CMake project for build_config="{build_config}" is initialized')
 def step_then_cmake_project_with_build_config_is_initialized(ctx, build_config):
     step_then_cmake_project_is_initialized(ctx)
+    assert ctx.cmake_current_project.build_config.name == build_config
+
+@then(u'the CMake project is not initialized for build_config="{build_config}"')
+@then(u'the CMake project for build_config="{build_config}" is not initialized')
+def step_then_cmake_project_with_build_config_is_not_initialized(ctx, build_config):
+    step_then_cmake_project_is_not_initialized(ctx)
     assert ctx.cmake_current_project.build_config.name == build_config

@@ -14,9 +14,34 @@ project:
 
 run:
     echo: true
-    pty:  true
+    # pty:  true
 
-clean:
+
+# -- cmake-build config:
+cmake_generator: ninja
+# MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
+build_dir_schema: "build.{BUILD_CONFIG}"
+
+build_config: debug
+build_configs:
+  - debug:
+      # cmake_build_type: Debug
+      # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
+      # cmake_generator: make
+      cmake_defines:
+        - CMAKE_BUILD_CONFIG: "debug"
+        # - "ONE=one"
+      # cmake_args:
+
+  - release:
+      cmake_build_type: MinSizeRel
+
+projects:
+  - examples/library_hello
+  - examples/program_hello
+
+
+cleanup:
     extra_directories:
       - "build"
       - "dist"
@@ -25,41 +50,10 @@ clean:
       - "examples/library_hello/build*"
       - reports
 
-clean_all:
+cleanup_all:
     extra_directories:
       - .hypothesis
       - .pytest_cache
-
-# cmake_build:
-cmake_generator: ninja
-build_dir_schema: "build.{BUILD_CONFIG}"
-build_config_aliases:
-    default: debug
-    all:
-      - qnx_armlev7_Debug
-      - qnx_armlev7_Release
-
-build_configs:
-    debug:
-        # cmake_toolchain: auto
-        cmake_defines:
-          - CMAKE_BUILD_TYPE: Debug
-    Release:
-        # cmake_toolchain: auto
-        cmake_defines:
-          - CMAKE_BUILD_TYPE=Release
-    qnx_armlev7_Debug:
-        cmake_toolchain: cmake/toolchain/qnx_armlev7.cmake
-        cmake_defines:
-          - CMAKE_BUILD_TYPE=Debug
-    qnx_armlev7_Release:
-        cmake_toolchain: cmake/toolchain/qnx_armlev7.cmake
-        cmake_defines:
-          - CMAKE_BUILD_TYPE: Release
-
-projects:
-  - examples/program_hello
-  - examples/library_hello
 
 behave_test:
     scopes:

@@ -1,6 +1,5 @@
-@wip
-@use.with_cmake_system=win32
-@use.with_cmake_cpu=x86_64
+@use.with_cmake_system=Windows
+@use.with_cmake_cpu=AMD64
 Feature: cmake-build auto-discover build_config name on host platform
 
   As a cmake build user
@@ -81,6 +80,6 @@ Feature: cmake-build auto-discover build_config name on host platform
 
     Examples:
       | HOST_BUILD_CONFIG_ALIAS | EXPECTED_HOST_BUILD_CONFIG | EXPECTED_CMAKE_BUILD_TYPE |
-      | host_debug              | win32_x86_64_debug         | Debug                     |
-      | host_release            | win32_x86_64_release       | Release                   |
+      | host_debug              | Windows_AMD64_debug        | Debug                     |
+      | host_release            | Windows_AMD64_release      | Release                   |
 

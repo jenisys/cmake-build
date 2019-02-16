@@ -35,16 +35,16 @@ projects:
   - library_hello
   - program_hello
 
-clean:
-    extra_directories:
-      - "program_hello/build.*"
-      - "library_hello/build.*"
-      - "program_hello/build"
-      - "library_hello/build"
+cleanup:
+  extra_directories:
+    - "program_hello/build.*"
+    - "library_hello/build.*"
+    - "program_hello/build"
+    - "library_hello/build"
 
-clean_all:
-    extra_directories:
-      - .hypothesis
+cleanup_all:
+  extra_directories:
+    - .hypothesis
 
 run:
   echo: true

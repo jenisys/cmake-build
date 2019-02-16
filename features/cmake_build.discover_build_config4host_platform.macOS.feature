@@ -4,7 +4,7 @@ Feature: cmake-build auto-discover build_config name on host platform
 
   As a cmake build user
   I want to auto-discover the build_config name of a host platform (with a schema)
-  So that I can distinguish the cmake_project.build_dir on a shared drive
+  So that I can distinguish the cmake_project.build_dir on a shared folder (or drive)
   that is used by several platforms (like: Windows, Linux).
 
   . SPECIFICATION:

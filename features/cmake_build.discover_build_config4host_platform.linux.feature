@@ -1,4 +1,3 @@
-@wip
 @use.with_cmake_system=Linux
 @use.with_cmake_cpu=x86_64
 Feature: cmake-build auto-discover build_config name on host platform

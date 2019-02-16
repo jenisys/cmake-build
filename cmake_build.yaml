@@ -35,19 +35,20 @@ projects:
   - examples/library_hello
   - examples/program_hello
 
-clean:
-    extra_directories:
-      - "examples/program_hello/build.*"
-      - "examples/library_hello/build.*"
-      - "examples/program_hello/build"
-      - "examples/library_hello/build"
+cleanup:
+  extra_directories:
+    - "examples/program_hello/build.*"
+    - "examples/library_hello/build.*"
+    - "examples/program_hello/build"
+    - "examples/library_hello/build"
 
-clean_all:
-    extra_directories:
-      - .hypothesis
-      - .pytest_cache
-      - .tox
-      - .venv*
+cleanup_all:
+  extra_directories:
+    - "**/build.*"
+    - .hypothesis
+    - .pytest_cache
+    - .tox
+    - .venv*
 
 run:
   echo: true

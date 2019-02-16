@@ -68,6 +68,18 @@ from path import Path
 # -----------------------------------------------------------------------------
 # CLEANUP UTILITIES:
 # -----------------------------------------------------------------------------
+def cleanup_accept_old_config(ctx):
+    ctx.cleanup.directories.extend(ctx.clean.directories or [])
+    ctx.cleanup.extra_directories.extend(ctx.clean.extra_directories or [])
+    ctx.cleanup.files.extend(ctx.clean.files or [])
+    ctx.cleanup.extra_files.extend(ctx.clean.extra_files or [])
+
+    ctx.cleanup_all.directories.extend(ctx.clean_all.directories or [])
+    ctx.cleanup_all.extra_directories.extend(ctx.clean_all.extra_directories or [])
+    ctx.cleanup_all.files.extend(ctx.clean_all.files or [])
+    ctx.cleanup_all.extra_files.extend(ctx.clean_all.extra_files or [])
+
+
 def execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=False):
     """Execute several cleanup tasks as part of the cleanup.
 
@@ -190,17 +202,11 @@ def path_glob(pattern, current_dir=None):
 @task
 def clean(ctx, dry_run=False):
     """Cleanup temporary dirs/files to regain a clean state."""
-    # -- VARIATION-POINT 1: Allow user to override in configuration-file
-    directories = ctx.clean.directories
-    files = ctx.clean.files
-
-    # -- VARIATION-POINT 2: Allow user to add more files/dirs to be removed.
-    extra_directories = ctx.clean.extra_directories or []
-    extra_files = ctx.clean.extra_files or []
-    if extra_directories:
-        directories.extend(extra_directories)
-    if extra_files:
-        files.extend(extra_files)
+    cleanup_accept_old_config(ctx)
+    directories = ctx.cleanup.directories or []
+    directories.extend(ctx.cleanup.extra_directories or [])
+    files = ctx.cleanup.files or []
+    files.extend(ctx.cleanup.extra_files or [])
 
     # -- PERFORM CLEANUP:
     execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=dry_run)
@@ -213,10 +219,16 @@ def clean_all(ctx, dry_run=False):
     """Clean up everything, even the precious stuff.
     NOTE: clean task is executed first.
     """
-    cleanup_dirs(ctx.clean_all.directories or [], dry_run=dry_run)
-    cleanup_dirs(ctx.clean_all.extra_directories or [], dry_run=dry_run)
-    cleanup_files(ctx.clean_all.files or [], dry_run=dry_run)
-    cleanup_files(ctx.clean_all.extra_files or [], dry_run=dry_run)
+    cleanup_accept_old_config(ctx)
+    directories = ctx.config.cleanup_all.directories or []
+    directories.extend(ctx.config.cleanup_all.extra_directories or [])
+    files = ctx.config.cleanup_all.files or []
+    files.extend(ctx.config.cleanup_all.extra_files or [])
+
+    # -- PERFORM CLEANUP:
+    # HINT: Remove now directories, files first before cleanup-tasks.
+    cleanup_dirs(directories, dry_run=dry_run)
+    cleanup_files(files, dry_run=dry_run)
     execute_cleanup_tasks(ctx, cleanup_all_tasks, dry_run=dry_run)
     clean(ctx, dry_run=dry_run)
 
@@ -235,24 +247,30 @@ def clean_python(ctx, dry_run=False):
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
+CLEANUP_EMPTY_CONFIG = {
+    "directories": [],
+    "files": [],
+    "extra_directories": [],
+    "extra_files": [],
+}
+def make_cleanup_config(**kwargs):
+    config_data = CLEANUP_EMPTY_CONFIG.copy()
+    config_data.update(kwargs)
+    return config_data
+
+
 namespace = Collection(clean_all, clean_python)
 namespace.add_task(clean, default=True)
 namespace.configure({
-    "clean": {
-        "directories": [],
-        "files": [
-            "*.bak", "*.log", "*.tmp",
-            "**/.DS_Store", "**/*.~*~",     # -- MACOSX
-        ],
-        "extra_directories": [],
-        "extra_files": [],
-    },
-    "clean_all": {
-        "directories": [".venv*", ".tox", "downloads", "tmp"],
-        "files": [],
-        "extra_directories": [],
-        "extra_files": [],
-    },
+    "cleanup": make_cleanup_config(
+        files=["*.bak", "*.log", "*.tmp", "**/.DS_Store", "**/*.~*~"]
+    ),
+    "cleanup_all": make_cleanup_config(
+        directories=[".venv*", ".tox", "downloads", "tmp"]
+    ),
+    # -- BACKWARD-COMPATIBLE: OLD-STYLE
+    "clean":     CLEANUP_EMPTY_CONFIG.copy(),
+    "clean_all": CLEANUP_EMPTY_CONFIG.copy(),
 })
 
 # -- EXTENSION-POINT: CLEANUP TASKS (called by: clean, clean_all task)

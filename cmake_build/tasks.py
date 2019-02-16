@@ -128,7 +128,7 @@ def require_build_config_is_valid_or_none(ctx, build_config, strict=True):
     return require_build_config_is_valid(ctx, build_config, strict=strict)
 
 
-def cmake_select_project_dirs(ctx, projects=None, verbose=False):
+def cmake_select_project_dirs(ctx, projects=None, strict=True, verbose=False):
     projects = projects or "all"
     project_dirs = []
     if isinstance(projects, six.string_types):
@@ -169,7 +169,11 @@ def cmake_select_project_dirs(ctx, projects=None, verbose=False):
         else:
             message = "CMAKE-BUILD: OOPS, no projects are specified (STOP HERE)."
             # print(message)
-        raise Exit(message)
+        if strict:
+            raise Exit(message)
+            # raise Failure(message)
+        else:
+            print(message)
 
 
 def make_build_config(ctx, name=None):
@@ -227,7 +231,9 @@ def make_cmake_projects(ctx, projects, build_config=None, strict=None,
                         verbose=True, **kwargs):
     if strict is None:
         strict = True
-    project_dirs = cmake_select_project_dirs(ctx, projects, verbose=verbose)
+    project_dirs = cmake_select_project_dirs(ctx, projects,
+                                             strict=strict,
+                                             verbose=verbose)
     cmake_projects = []
     for project_dir in project_dirs:
         cmake_project = make_cmake_project(ctx, project_dir, build_config,
@@ -289,7 +295,7 @@ def clean(ctx, project="all", build_config=None, args=None,
           dry_run=False):
     """Clean one or cmake project(s) by removing the build artifacts."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         verbose=False)
+                                         strict=False, verbose=False)
     for cmake_project in cmake_projects:
         cmake_project.clean(args=args)     # MAYBE: dry_run=dry_run)
 
