@@ -347,7 +347,7 @@ def rebuild(ctx, project="all", build_config=None, generator=None,
 
 @task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 def redo(ctx, project="all", build_config=None, generator=None,
-         args=None, init_args=None, test_args=None):
+         args=None, init_args=None, test_args=None, use_test=False):
     """Performs multiple steps for one (or more) project(s).
 
     Steps:
@@ -363,7 +363,8 @@ def redo(ctx, project="all", build_config=None, generator=None,
     for cmake_project in cmake_projects:
         cmake_project.reinit(args=init_args)
         cmake_project.build(args=args)
-        cmake_project.test(args=test_args)
+        if use_test:
+            cmake_project.test(args=test_args)
 
 
 def cmake_build_show_projects(projects):
