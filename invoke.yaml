@@ -24,15 +24,7 @@ build_dir_schema: "build.{BUILD_CONFIG}"
 
 build_config: debug
 build_configs:
-  - debug:
-      # cmake_build_type: Debug
-      # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
-      # cmake_generator: make
-      cmake_defines:
-        - CMAKE_BUILD_CONFIG: "debug"
-        # - "ONE=one"
-      # cmake_args:
-
+  - debug
   - release:
       cmake_build_type: MinSizeRel
 

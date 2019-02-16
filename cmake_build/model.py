@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function
 # IMPORTS:
 # -----------------------------------------------------------------------------
 import os
+import six
 from invoke.util import cd
 from path import Path
 from .cmake_util import \
@@ -33,6 +34,18 @@ CMAKE_CONFIG_DEFAULTS = {
     "cmake_args": [],
 }
 CMAKE_BUILD_VERBOSE = (os.environ.get("CMAKE_BUILD_VERBOSE", None) == "yes")
+
+
+def make_args_string(args):
+    """Build args-string from args as string or list."""
+    if not args:
+        return ""
+
+    if not isinstance(args, six.string_types):
+        assert isinstance(args, (list, tuple))
+        args = " ".join([str(x) for x in args])
+    args_text = "{0}".format(args)
+    return args_text.strip()
 
 
 # -----------------------------------------------------------------------------
@@ -350,10 +363,6 @@ class CMakeProject(object):
             self.stored_data = self.current_data.copy()
         self.dirty = False
 
-    # def make_cmake_generator_option(self, cmake_generator=None):
-    #     cmake_generator = cmake_generator or self.cmake_generator
-    #     return cmake_cmdline_generator_option(cmake_generator)
-    #
     def make_cmake_init_options(self, cmake_generator=None):
         cmake_toolchain = self.current_data.cmake_toolchain
         cmake_generator = self.current_data.cmake_generator
@@ -416,7 +425,7 @@ class CMakeProject(object):
 
             cmake_init_options = self.make_cmake_init_options(cmake_generator)
             if args:
-                cmake_init_options += " {0}".format(args)
+                cmake_init_options += " {0}".format(make_args_string(args))
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
             relpath_to_project_dir = posixpath_normpath(relpath_to_project_dir)
             ctx.run("cmake {options} {relpath}".format(
@@ -439,7 +448,7 @@ class CMakeProject(object):
         """Triggers the cmake.build step (and delegate to used build-system)."""
         cmake_build_args = ""
         if args:
-            cmake_build_args = "-- {0}".format(args)
+            cmake_build_args = "-- {0}".format(make_args_string(args))
 
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if ensure_init:
@@ -463,7 +472,8 @@ class CMakeProject(object):
         print("CMAKE-CLEAN: {0}".format(project_build_dir))
         cmake_clean_args = "clean"
         if args:
-            cmake_clean_args = "clean {args}".format(args=args)
+            clean_args = make_args_string(args)
+            cmake_clean_args = "clean {0}".format(clean_args)
         with cd(self.project_build_dir):
             self.ctx.run("cmake --build . -- {0}".format(cmake_clean_args))
 
@@ -478,10 +488,14 @@ class CMakeProject(object):
         self.clean(init_args=init_args)
         self.build(args=args, ensure_init=True)
 
+    def redo(self, args=None, init_args=None):
+        self.reinit(args=init_args)
+        self.rebuild(args=args)
+
     def ctest(self, args=None, init_args=None):
         ctest_args = ""
         if args:
-            ctest_args = " ".join(args)
+            ctest_args = make_args_string(args)
 
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         self.ensure_init(args=init_args)

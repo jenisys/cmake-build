@@ -21,12 +21,9 @@ build_config: debug
 build_configs:
   - debug:
       # cmake_build_type: Debug
-      # MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
-      # cmake_generator: make
+      # cmake_toolchain: cmake/toolchain/XXX.cmake
       cmake_defines:
         - CMAKE_BUILD_CONFIG: "debug"
-        # - "ONE=one"
-      # cmake_args:
 
   - release:
       cmake_build_type: MinSizeRel
