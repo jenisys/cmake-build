@@ -551,7 +551,7 @@ class CMakeProjectWithSyndrome(object):
 
 
     def clean(self, **kwargs):
-        self.fail("CMAKE-CLEAN: {0} (SKIPPED: {1})".format(
+        self.warn("CMAKE-CLEAN: {0} (SKIPPED: {1})".format(
                   self.relpath_to_project_dir(), self.syndrome))
 
     def reinit(self, args=None):
