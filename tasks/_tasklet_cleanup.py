@@ -54,14 +54,13 @@ EXAMPLE::
     cleanup_tasks.configure(namespace.configuration())
 """
 
-# NOT-NEEDED: from invoke.exceptions import Failure
 from __future__ import absolute_import, print_function
 import os.path
 import sys
 import pathlib
 from invoke import task, Collection
 from invoke.executor import Executor
-from invoke.exceptions import Failure
+from invoke.exceptions import Exit, Failure, UnexpectedExit
 from path import Path
 
 
@@ -96,12 +95,12 @@ def execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=False):
         try:
             print("CLEANUP TASK: %s" % cleanup_task)
             executor.execute((cleanup_task, dict(dry_run=dry_run)))
-        except Failure as e:
+        except (Exit, Failure, UnexpectedExit) as e:
             print("FAILURE in CLEANUP TASK: %s (GRACEFULLY-IGNORED)" % cleanup_task)
             failure_count += 1
 
     if failure_count:
-        print("CLEANUP TASKS: %d failures occured" % failure_count)
+        print("CLEANUP TASKS: %d failure(s) occured" % failure_count)
 
 
 def cleanup_dirs(patterns, dry_run=False, workdir="."):
@@ -272,6 +271,7 @@ namespace.configure({
     "clean":     CLEANUP_EMPTY_CONFIG.copy(),
     "clean_all": CLEANUP_EMPTY_CONFIG.copy(),
 })
+
 
 # -- EXTENSION-POINT: CLEANUP TASKS (called by: clean, clean_all task)
 # NOTE: Can be used by other tasklets to register cleanup tasks.
