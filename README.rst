@@ -4,8 +4,8 @@ cmake-build
 .. _CMake: https://cmake.org
 .. _`cmake-build`: https://github.com/jenisys/cmake-build
 
-`cmake-build`_ simplifies usage of `CMake`_ by making it directly usable
-as build system.
+`cmake-build`_ simplifies the usage of `CMake`_ by making it directly usable
+as a build system.
 
 `CMake`_ is:
 
@@ -65,13 +65,13 @@ File "$WORKDIR/cmake_build.yaml":
 
 .. code-block:: yaml
 
-    cmake_generator: ninja
-    build_dir_schema:    "build/{BUILD_CONFIG}"
-    build_config: Linux_arm64_Debug
+    cmake_generator: ninja              #< DEFAULT cmake.generator.
+    build_dir_schema: "build.{BUILD_CONFIG}"
+    build_config: Linux_arm64_Debug     #< DEFAULT build_config.
     build_configs:
         # -- HOST-COMPILE BUILD-CONFIGS (example):
+        # HINT: AUTO-DISCOVERED with build_config=host_debug, host_release
         - Linux_x86_64_Debug:
-            # -- HINT: AUTO-DISCOVERED
             # cmake_build_type: Debug
 
         - Linux_x86_64_Release:
@@ -79,13 +79,13 @@ File "$WORKDIR/cmake_build.yaml":
 
         # -- CROSS-COMPILE BUILD-CONFIGS (example):
         - Linux_arm64_Debug:
-            toolchain: cmake/toolchain/linux_gcc_arm64.cmake
+            cmake_toolchain:  cmake/toolchain/linux_gcc_arm64.cmake
             cmake_build_type: MinSizeDbg
             cmake_defines:
               - FOO=foo
 
         - Linux_arm64_Release:
-            toolchain: cmake/toolchain/linux_gcc_arm64.cmake
+            cmake_toolchain:  cmake/toolchain/linux_gcc_arm64.cmake
             cmake_build_type: MinSizeRel
 
     projects:
