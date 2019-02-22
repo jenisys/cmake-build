@@ -40,7 +40,7 @@ Feature: cmake-build without Configuration File
   Scenario: cmake-build works without configfile if CMakeLists.txt file exists
     Given a file named "library_hello/CMakeLists.txt" exists
     And   a file named "cmake_build.yaml" does not exist
-    When I run "cmake-build init -p library_hello"
+    When I run "cmake-build init --project=library_hello"
     Then it should pass with:
       """
       -- Build files have been written to: {__WORKDIR__}/library_hello/build.debug
@@ -56,16 +56,16 @@ Feature: cmake-build without Configuration File
     And the CMake project is initialized
     But note that "I can use cmake-build for any CMake project (unprepared)"
 
+
   Scenario: cmake-build fails without configfile and CMakeLists.txt file
     Given I remove the file "library_hello/CMakeLists.txt"
     And   a file named "library_hello/CMakeLists.txt" does not exist
     And   a file named "cmake_build.yaml" does not exist
-    When I run "cmake-build init -p library_hello"
+    When I run "cmake-build init --project=library_hello"
     Then it should fail with:
       """
       CMAKE-INIT: library_hello (SKIPPED: not a cmake.project (missing: CMakeLists.txt file))
       """
-      # OLD: CMake Error: The source directory "{__WORKDIR__}/library_hello" does not appear to contain CMakeLists.txt.
 
 
   @build_config

@@ -139,8 +139,7 @@ Feature: cmake-build init Command
     When I run "cmake-build init"
     Then it should fail with:
       """
-      CMAKE-BUILD: library_hello (SKIPPED: NOT-FOUND)
-      CMAKE-BUILD: OOPS, all projects are MISSING (STOP HERE).
+      CMAKE-INIT: library_hello (SKIPPED: cmake.project directory does not exist)
       """
     And the command output should not contain:
       """

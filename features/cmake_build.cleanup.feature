@@ -100,8 +100,7 @@ Feature: cmake-build cleanup Command
     Then it should pass with:
       """
       CLEANUP TASK: clean-cmake-build
-      CMAKE-BUILD: UNKWOWN_DIR (SKIPPED: NOT-FOUND)
-      FAILURE in CLEANUP TASK: clean-cmake-build (GRACEFULLY-IGNORED)
+      CMAKE-CLEAN: UNKWOWN_DIR (SKIPPED: cmake.project directory does not exist)
       """
     But note that "cmake-build clean task does not perform anything"
     And note that "the non-existing UNKNOWN_DIR is silently ignored"

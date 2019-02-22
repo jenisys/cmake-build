@@ -82,8 +82,8 @@ Feature: cmake-build clean Command
   Scenario: CMake Project (directory) does not exist (Fail: clean)
     Given the directory "UNKNOWN_DIR" should not exist
     When I run "cmake-build clean --project=UNKWOWN_DIR"
-    Then it should fail with:
+    Then it should pass with:
       """
-      CMAKE-BUILD: UNKWOWN_DIR (SKIPPED: NOT-FOUND)
-      CMAKE-BUILD: OOPS, all projects are MISSING (STOP HERE).
+      CMAKE-CLEAN: UNKWOWN_DIR (SKIPPED: cmake.project directory does not exist)
       """
+    But note that "the missing cmake.project directory is gracefully ignored"
