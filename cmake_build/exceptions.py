@@ -45,6 +45,9 @@ class NiceFailure(UnexpectedExit):
     def __str__(self):
         text = self.template.format(result=self.result, reason=self.reason,
                                     command=self.result.command)
+        if not text.endswith("\n"):
+            # -- ENSURE NEWLINE: Improve readability.
+            text += "\n"
         return text
 
     def __repr__(self):

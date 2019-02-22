@@ -110,7 +110,7 @@ def clean(ctx, project="all", build_config=None, args=None,
           dry_run=False, strict=True):
     """Clean one or cmake project(s) by removing the build artifacts."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         strict=True, verbose=True)
+                                         strict=True)
     for cmake_project in cmake_projects:
         cmake_project.clean(args=args)     # MAYBE: dry_run=dry_run)
 
@@ -128,7 +128,7 @@ def reinit(ctx, project="all", build_config=None, generator=None, args=None,
            dry_run=False):
     """Reinit cmake projects (performs: cleanup, init)."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         init_args=args, verbose=False)
+                                         init_args=args)
     cmake_runner = CMakeBuildRunner(cmake_projects)
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
@@ -141,8 +141,7 @@ def rebuild(ctx, project="all", build_config=None, generator=None,
             args=None, init_args=None):
     """Rebuild one or all cmake projects (performs: clean, build)."""
     cmake_projects = make_cmake_projects(ctx, project,
-                                         build_config=build_config,
-                                         verbose=False)
+                                         build_config=build_config)
     cmake_runner = CMakeBuildRunner(cmake_projects)
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
@@ -150,23 +149,6 @@ def rebuild(ctx, project="all", build_config=None, generator=None,
     cmake_runner.rebuild(args=args, init_args=init_args)
     # PREPARED, TODO: dry_run=dry_run)
 
-
-# @task(name="all")
-# def build_all(ctx, project="all", generator=None, build_config=None,
-#         args=None, init_args=None, test_args=None):
-#     """Performs multiple stsps for one (or more) projects:
-#
-#     - cmake.init
-#     - cmake.build
-#     - cmake.test (= ctest)
-#     """
-#     cmake_projects = make_cmake_projects(ctx, project,
-#                                          build_config=build_config,
-#                                          init_args=args,
-#                                          verbose=False)
-#     for cmake_project in cmake_projects:
-#         cmake_project.build(args=args, init_args=init_args)
-#         cmake_project.test(args=test_args)
 
 @task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 def redo(ctx, project="all", build_config=None, generator=None,
