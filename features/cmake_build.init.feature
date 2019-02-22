@@ -139,7 +139,7 @@ Feature: cmake-build init Command
     When I run "cmake-build init"
     Then it should fail with:
       """
-      CMAKE-BUILD: Skip project library_hello (NOT-FOUND)
+      CMAKE-BUILD: library_hello (SKIPPED: NOT-FOUND)
       CMAKE-BUILD: OOPS, all projects are MISSING (STOP HERE).
       """
     And the command output should not contain:

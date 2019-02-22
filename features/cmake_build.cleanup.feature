@@ -54,7 +54,7 @@ Feature: cmake-build cleanup Command
     Then it should pass with:
       """
       FAILURE in CLEANUP TASK: clean-cmake-build (GRACEFULLY-IGNORED)
-      CLEANUP TASKS: 1 failures occured
+      CLEANUP TASKS: 1 failure(s) occured
       RMTREE: build.debug
 
       ninja: error: loading 'build.ninja': No such file or directory
@@ -79,7 +79,9 @@ Feature: cmake-build cleanup Command
     Then it should pass with:
       """
       CMAKE-BUILD: Ignore . (not a cmake.project; cwd={__WORKDIR__})
-      CMAKE-BUILD: OOPS, no projects are specified (STOP HERE).
+      """
+    And the command output should contain:
+      """
       RMTREE: build.debug
       RMTREE: build.release
       """
@@ -98,6 +100,8 @@ Feature: cmake-build cleanup Command
     Then it should pass with:
       """
       CLEANUP TASK: clean-cmake-build
+      CMAKE-BUILD: UNKWOWN_DIR (SKIPPED: NOT-FOUND)
+      FAILURE in CLEANUP TASK: clean-cmake-build (GRACEFULLY-IGNORED)
       """
     But note that "cmake-build clean task does not perform anything"
     And note that "the non-existing UNKNOWN_DIR is silently ignored"

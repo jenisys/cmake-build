@@ -19,6 +19,7 @@ from .cmake_util import \
     make_build_dir_from_schema, map_build_config_to_cmake_build_type, \
     cmake_cmdline, cmake_defines_add as _cmake_defines_add, \
     cmake_defines_remove as _cmake_defines_remove
+from .exceptions import NiceFailure
 from .persist import PersistentData
 from .pathutil import posixpath_normpath
 
@@ -395,20 +396,13 @@ class CMakeProject(object):
                 not self.cmake_build_data_filename.exists())
                 # -- MAYBE: or self.dirty
 
-    # -- PROJECT-COMMAND API:
-    def cleanup(self):
-        if self.project_build_dir.isdir():
-            project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
-            "CMAKE-CLEANUP: {0}".format(project_build_dir)
-            self.project_build_dir.rmtree_p()
-
-    def ensure_init(self, args=None, cmake_generator=None): # @simplify
+    def ensure_init(self, args=None, cmake_generator=None):  # @simplify
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if self.initialized and not self.needs_reinit():
             # -- CASE: ALREADY DONE w/ same cmake_generator.
             # pylint: disable=line-too-long
-            print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})."\
-                .format(project_build_dir, self.cmake_generator))
+            print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})." \
+                  .format(project_build_dir, self.cmake_generator))
             return False
 
         if self.project_build_dir.isdir():
@@ -436,6 +430,13 @@ class CMakeProject(object):
             self.cmake_generator = cmake_generator
             self.store_cmake_build_data()
         return True
+
+    # -- PROJECT-COMMAND API:
+    def cleanup(self):
+        if self.project_build_dir.isdir():
+            project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
+            "CMAKE-CLEANUP: {0}".format(project_build_dir)
+            self.project_build_dir.rmtree_p()
 
     def init(self, args=None, cmake_generator=None):
         """Perform CMake init of the project build directory for this
@@ -506,7 +507,81 @@ class CMakeProject(object):
             print()
 
     def test(self, args=None, init_args=None):
-        return self.ctest(args=args, init_args=init_args)
+        self.ctest(args=args, init_args=init_args)
+
+
+class CMakeProjectWithSyndrome(object):
+    """Common base class for :class:`CMakeProject`(s) that have a syndrome.
+
+    Examples are:
+
+    * :attr:`project_dir` directory does not exist
+    * No "CMakeLists.txt" file exists in the :attr:`project_dir` directory
+    """
+    SYNDROME = "Faulty cmake.project"
+    FAILURE_TEMPLATE = "{reason}"
+
+    def __init__(self, project_dir=None, syndrome=None):
+        self.project_dir = Path(project_dir or ".").abspath()
+        self.syndrome = syndrome or self.SYNDROME
+
+    def relpath_to_project_dir(self, start="."):
+        return posixpath_normpath(self.project_dir.relpath(start))
+
+    def fail(self, reason):
+        raise NiceFailure(reason=reason,
+                          template=self.FAILURE_TEMPLATE)
+
+    def warn(self, reason):
+        print(reason)
+
+    # -- PROJECT-COMMAND API:
+    def cleanup(self):
+        self.warn("CMAKE-CLEANUP: {0} (SKIPPED: {1})".format(
+                  self.relpath_to_project_dir(), self.syndrome))
+
+    def init(self, **kwargs):
+        self.fail("CMAKE-INIT: {0} (SKIPPED: {1})".format(
+                  self.relpath_to_project_dir(), self.syndrome))
+
+
+    def build(self, **kwargs):
+        self.fail("CMAKE-BUILD: {0} (SKIPPED: {1})".format(
+                    self.relpath_to_project_dir(), self.syndrome))
+
+
+    def clean(self, **kwargs):
+        self.fail("CMAKE-CLEAN: {0} (SKIPPED: {1})".format(
+                  self.relpath_to_project_dir(), self.syndrome))
+
+    def reinit(self, args=None):
+        self.cleanup()
+        self.init(args=args)
+
+    def rebuild(self, args=None, init_args=None):
+        self.clean(init_args=init_args)
+        self.build(args=args, ensure_init=True)
+
+    def redo(self, args=None, init_args=None):
+        self.reinit(args=init_args)
+        self.rebuild(args=args)
+
+    def ctest(self, args=None, init_args=None):
+        self.fail("CMAKE-TEST: {0} (SKIPPED: {1})".format(
+                  self.relpath_to_project_dir(), self.syndrome))
+
+    def test(self, args=None, init_args=None):
+        self.ctest(args=args, init_args=init_args)
+
+
+class CMakeProjectWithoutProjectDirectory(CMakeProjectWithSyndrome):
+    SYNDROME = "cmake.project directory does not exist"
+
+
+class CMakeProjectWithoutCMakeListsFile(CMakeProjectWithSyndrome):
+    """Used if the "CMakeLists.txt" file is missing in the :attr:`project_dir`"""
+    SYNDROME = "not a cmake.project (missing: CMakeLists.txt file)"
+
 
 
 class CMakeBuildRunner(object):

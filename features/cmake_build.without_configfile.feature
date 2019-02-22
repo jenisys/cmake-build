@@ -63,8 +63,10 @@ Feature: cmake-build without Configuration File
     When I run "cmake-build init -p library_hello"
     Then it should fail with:
       """
-      CMake Error: The source directory "{__WORKDIR__}/library_hello" does not appear to contain CMakeLists.txt.
+      CMAKE-INIT: library_hello (SKIPPED: not a cmake.project (missing: CMakeLists.txt file))
       """
+      # OLD: CMake Error: The source directory "{__WORKDIR__}/library_hello" does not appear to contain CMakeLists.txt.
+
 
   @build_config
   @build_config.<BUILD_CONFIG>

@@ -1,10 +1,8 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import absolute_import, print_function
-from cmake_build.model import CMakeProject, BuildConfig
-from cmake_build import tasks # make_cmake_project,  make_build_config
-from path import Path
 import os
+from cmake_build import model_builder
 
 
 class MockConfig(object):
@@ -68,7 +66,7 @@ def make_context_object(workdir=None):
 def make_build_config(ctx, build_config=None):
     if ctx is None:
         ctx = make_context_object()
-    return tasks.make_build_config(ctx, build_config)
+    return model_builder.make_build_config(ctx, build_config)
 
 
 def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
@@ -77,7 +75,7 @@ def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
     # build_config_data = make_build_config(ctx, build_config)
     # cmake_project = CMakeProject(ctx, project_dir, build_config=build_config_data)
     # return cmake_project
-    return tasks.make_cmake_project(ctx, project_dir, build_config=build_config, **kwargs)
+    return model_builder.make_cmake_project(ctx, project_dir, build_config=build_config, **kwargs)
 
 
 def make_simple_cmake_project(project_dir, build_config=None, **kwargs):

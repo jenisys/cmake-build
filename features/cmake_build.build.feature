@@ -106,6 +106,6 @@ Feature: cmake-build build Command
     When I run "cmake-build build --project=UNKNOWN_DIR"
     Then it should fail with:
       """
-      CMAKE-BUILD: Skip project UNKNOWN_DIR (NOT-FOUND)
+      CMAKE-BUILD: UNKNOWN_DIR (SKIPPED: NOT-FOUND)
       CMAKE-BUILD: OOPS, all projects are MISSING (STOP HERE).
       """
