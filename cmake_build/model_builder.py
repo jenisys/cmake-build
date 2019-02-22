@@ -13,7 +13,6 @@ from cmake_build.model import (
     CMakeProjectWithoutProjectDirectory,
     CMakeProjectWithoutCMakeListsFile
 )
-from cmake_build.pathutil import posixpath_normpath
 
 
 # -----------------------------------------------------------------------------
@@ -114,7 +113,8 @@ def require_build_config_is_valid_or_none(ctx, build_config, strict=True):
 # -----------------------------------------------------------------------------
 # CMAKE PROJECT MODEL BUILDER RELATED:
 # -----------------------------------------------------------------------------
-def cmake_select_project_dirs(ctx, projects=None, strict=True, verbose=False):
+def cmake_select_project_dirs(ctx, projects=None, strict=True):
+    # pylint: disable=too-many-branches
     projects = projects or "all"
     project_dirs = []
     if isinstance(projects, six.string_types):
@@ -128,6 +128,7 @@ def cmake_select_project_dirs(ctx, projects=None, strict=True, verbose=False):
         raise ValueError("projects=%r with type=%s" % (projects, type(projects)))
 
     if not project_dirs:
+        # -- CONSIDER CURRENT_DIR: As cmake.project
         curdir = Path(".").abspath()
         if Path("CMakeLists.txt").isfile():
             # pylint: disable=line-too-long
@@ -137,36 +138,29 @@ def cmake_select_project_dirs(ctx, projects=None, strict=True, verbose=False):
             # pylint: disable=line-too-long
             print("CMAKE-BUILD: Ignore . (not a cmake.project; cwd={0})".format(curdir))
 
+
     missing_project_dirs = []
     for project_dir in project_dirs:
         project_dir = Path(project_dir)
         if not project_dir.isdir():
-            if verbose:
-                print("CMAKE-BUILD: {0} (SKIPPED: NOT-FOUND)".format(
-                    posixpath_normpath(project_dir)))
-                missing_project_dirs.append(project_dir)
-            continue
+            missing_project_dirs.append(project_dir)
         yield project_dir
 
-    # -- FINALLY:
-    if len(missing_project_dirs) == len(project_dirs):
-        # MAYBE-JE-PREPARED:
-        # if len(missing_project_dirs) == 1:
-        #    yield missing_project_dirs[0]
-        if missing_project_dirs:
-            # -- OOPS: Only missing project_dirs
-            message = "CMAKE-BUILD: OOPS, all projects are MISSING (STOP HERE)."
-            exit_code = 11
-            # print(message)
-        else:
-            message = "CMAKE-BUILD: OOPS, no projects are specified (STOP HERE)."
-            exit_code = 12
-            # print(message)
+    # -- FINAL-DIAGNOSTICS: NO_PROJECT_DIRS, ...
+    message = ""
+    if not project_dirs:
+        message = "CMAKE-BUILD: OOPS, no projects are specified (STOP HERE)."
+    # -- DISABLED:
+    # elif len(project_dirs) == len(missing_project_dirs):
+    #     message = "CMAKE-BUILD: OOPS, all projects are MISSING."
+    #     strict = False
+
+    if message:
         if strict:
-            raise Exit(message, code=exit_code)
-            # raise Failure(message)
+            raise Exit(message, code=10)
         else:
             print(message)
+
 
 
 def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwargs):
@@ -200,13 +194,10 @@ def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwar
     return cmake_project
 
 
-def make_cmake_projects(ctx, projects, build_config=None, strict=None,
-                        verbose=True, **kwargs):
+def make_cmake_projects(ctx, projects, build_config=None, strict=None, **kwargs):
     if strict is None:
         strict = True
-    project_dirs = cmake_select_project_dirs(ctx, projects,
-                                             strict=strict,
-                                             verbose=verbose)
+    project_dirs = cmake_select_project_dirs(ctx, projects, strict=strict)
     cmake_projects = []
     for project_dir in project_dirs:
         cmake_project = make_cmake_project(ctx, project_dir, build_config,
