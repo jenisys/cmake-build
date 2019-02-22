@@ -96,6 +96,7 @@ def execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=False):
             print("CLEANUP TASK: %s" % cleanup_task)
             executor.execute((cleanup_task, dict(dry_run=dry_run)))
         except (Exit, Failure, UnexpectedExit) as e:
+            print(e)
             print("FAILURE in CLEANUP TASK: %s (GRACEFULLY-IGNORED)" % cleanup_task)
             failure_count += 1
 
