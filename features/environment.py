@@ -1,9 +1,9 @@
 # -*- coding: UTF-8 -*-
 
 from behave.tag_matcher import ActiveTagMatcher, setup_active_tag_values
-from behave4cmd0.setup_command_shell import setup_command_shell_processors4behave
+from behave.fixture import use_fixture_by_tag
+from behave4cmake_build.fixtures import fixture_registry as cmake_build_fixture_registry
 from cmake_build.host_platform import cmake_system, cmake_machine
-import platform
 import os.path
 import sys
 import six
@@ -12,6 +12,7 @@ import six
 HERE = os.path.dirname(__file__)
 TOPDIR = os.path.join(HERE, "..")
 TOPDIR = os.path.abspath(TOPDIR)
+
 
 # -- MATCHES ANY TAGS: @use.with_{category}={value}
 # NOTE: active_tag_value_provider provides category values for active tags.
@@ -28,6 +29,14 @@ active_tag_value_provider = {
 }
 active_tag_matcher = ActiveTagMatcher(active_tag_value_provider)
 
+
+# -----------------------------------------------------------------------------
+# FIXTURE REGISTRY:
+# -----------------------------------------------------------------------------
+fixture_registry = {}
+fixture_registry.update(cmake_build_fixture_registry)
+
+
 # -----------------------------------------------------------------------------
 # HOOKS:
 # -----------------------------------------------------------------------------
@@ -38,13 +47,21 @@ def before_all(context):
     setup_python_path()
     setup_command_shell_processors4cmake_build()
 
+
 def before_feature(context, feature):
     if active_tag_matcher.should_exclude_with(feature.tags):
         feature.skip(reason=active_tag_matcher.exclude_reason)
 
+
 def before_scenario(context, scenario):
     if active_tag_matcher.should_exclude_with(scenario.effective_tags):
         scenario.skip(reason=active_tag_matcher.exclude_reason)
+
+
+def before_tag(context, tag):
+    if tag.startswith("fixture."):
+        return use_fixture_by_tag(tag, context, fixture_registry)
+
 
 # -----------------------------------------------------------------------------
 # SPECIFIC FUNCTIONALITY:

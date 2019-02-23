@@ -11,6 +11,7 @@ Simple example how invoke.Program can be used in own scripts/commands.
 """
 
 from __future__ import absolute_import, print_function
+import os
 from invoke import Program, Collection
 from invoke.config import Config, merge_dicts
 
@@ -24,6 +25,17 @@ from cmake_build.version import VERSION
 
 namespace = Collection.from_module(cmake_build_tasks)
 namespace.add_collection(Collection.from_module(cleanup))
+
+
+# ---------------------------------------------------------------------------
+# CMAKE-BUILD CONFIG ENV-ALIASES:
+# ---------------------------------------------------------------------------
+def setup_environment_aliases4cmake_build():
+    BUILD_CONFIG1 = os.environ.get("CMAKE_BUILD_CONFIG", None)
+    BUILD_CONFIG2 = os.environ.get("CMAKE_BUILD_BUILD_CONFIG", None)
+    if BUILD_CONFIG1 and not BUILD_CONFIG2:
+        # -- SIMPLIFY USE: CMAKE_BUILD_CONFIG <=> CMAKE_BUILD_BUILD_CONFIG
+        os.environ["CMAKE_BUILD_BUILD_CONFIG"] = BUILD_CONFIG1
 
 
 # ---------------------------------------------------------------------------
@@ -71,10 +83,10 @@ class CMakeBuildProgramConfig(Config):
 
 
 # program = CMakeBuildProgram()
+setup_environment_aliases4cmake_build()
 program = Program(version=VERSION, namespace=namespace,
                   name="cmake-build", binary="cmake-build",
                   config_class=CMakeBuildProgramConfig)
-
 
 
 
