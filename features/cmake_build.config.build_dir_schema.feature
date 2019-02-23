@@ -1,5 +1,5 @@
 @fixture.cmake_build.ensure_clean_environment
-Feature: config.build_dir_schema
+Feature: config-parameter build_dir_schema
 
   As a cmake-build user
   I want to specify the cmake.project build_dir name in a flexible way
