@@ -412,12 +412,14 @@ class CMakeProject(object):
         cmake_generator = cmake_generator or self.cmake_generator
         ctx = self.ctx
         self.project_build_dir.makedirs_p()
+        cmake_init_options = self.make_cmake_init_options(cmake_generator)
         with cd(self.project_build_dir):
             # pylint: disable=line-too-long
             print("CMAKE-INIT:  {0} (using cmake.generator={1})".format(
                 project_build_dir, cmake_generator))
 
-            cmake_init_options = self.make_cmake_init_options(cmake_generator)
+            # DISABLED: toolchain, used too late w/ wrong abspath.
+            # cmake_init_options = self.make_cmake_init_options(cmake_generator)
             if args:
                 cmake_init_options += " {0}".format(make_args_string(args))
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
