@@ -90,3 +90,5 @@ if sys.platform.startswith("win"):
     from ._compat_shutil import which
     run_settings = dict(echo=True, pty=False, shell=which("cmd"))
     namespace.configure({"run": run_settings})
+else:
+    namespace.configure({"run": dict(echo=True, pty=True)})
