@@ -1,5 +1,5 @@
 # ===========================================================================
-# CMAKE-BUILD CONFIGURATION: cmake-build.yaml
+# CMAKE-BUILD CONFIGURATION: cmake_build.yaml
 # ===========================================================================
 # PROJECT: cmake-build/examples/
 # DESCRIPTION:
@@ -14,9 +14,7 @@
 # ===========================================================================
 
 cmake_generator: ninja
-# MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
 build_dir_schema: "build.{BUILD_CONFIG}"
-
 build_config: debug
 build_configs:
   - debug:
@@ -32,12 +30,19 @@ projects:
   - examples/library_hello
   - examples/program_hello
 
+run:
+  echo: true
+
 cleanup:
   extra_directories:
     - "examples/program_hello/build.*"
     - "examples/library_hello/build.*"
     - "examples/program_hello/build"
     - "examples/library_hello/build"
+    - "build"
+    - "dist"
+    - "reports"
+    - "__WORKDIR__"
 
 cleanup_all:
   extra_directories:
@@ -46,6 +51,3 @@ cleanup_all:
     - .pytest_cache
     - .tox
     - .venv*
-
-run:
-  echo: true
