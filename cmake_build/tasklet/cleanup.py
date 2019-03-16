@@ -244,6 +244,37 @@ def clean_python(ctx, dry_run=False):
     cleanup_files(["**/*.pyc", "**/*.pyo", "**/*$py.class"], dry_run=dry_run)
 
 
+@task(help={
+    "path": "Path to cleanup.",
+    "interactive": "Enable interactive mode.",
+    "force": "Enable force mode.",
+    "dry-run": "Enable dry-run mode.",
+    "options": "Additional git-clean options",
+})
+def git_clean(ctx, path=None, interactive=True, force=False, dry_run=False,
+              options=None):
+    """Perform git-clean command to cleanup the worktree of a git repository.
+
+    BEWARE: This may remove any precious files that are not checked in.
+    WARNING: DANGEROUS COMMAND.
+    """
+    args = []
+    force = force or ctx.config.git_clean.force
+    dry_run = dry_run or ctx.config.git_clean.dry_run
+    path = path or ctx.config.git_clean.path or "."
+
+    if interactive:
+        args.append("--interactive")
+    if force:
+        args.append("--force")
+    if dry_run:
+        args.append("--dry-run")
+    args.append(options or "")
+    args = " ".join(args).strip()
+
+    ctx.run("git clean {options} {path}".format(options=args, path=path))
+
+
 # -----------------------------------------------------------------------------
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
@@ -261,6 +292,7 @@ def make_cleanup_config(**kwargs):
 
 namespace = Collection(clean_all, clean_python)
 namespace.add_task(clean, default=True)
+namespace.add_task(git_clean)
 namespace.configure({
     "cleanup": make_cleanup_config(
         files=["*.bak", "*.log", "*.tmp", "**/.DS_Store", "**/*.~*~"]
@@ -268,6 +300,12 @@ namespace.configure({
     "cleanup_all": make_cleanup_config(
         directories=[".venv*", ".tox", "downloads", "tmp"]
     ),
+    "git_clean": {
+        "interactive": True,
+        "dry_run": False,
+        "force": False,
+        "path": ".",
+    },
     # -- BACKWARD-COMPATIBLE: OLD-STYLE
     "clean":     CLEANUP_EMPTY_CONFIG.copy(),
     "clean_all": CLEANUP_EMPTY_CONFIG.copy(),
