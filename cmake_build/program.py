@@ -12,6 +12,7 @@ Simple example how invoke.Program can be used in own scripts/commands.
 
 from __future__ import absolute_import, print_function
 import os
+import sys
 from invoke import Program, Collection
 from invoke.config import Config, merge_dicts
 
@@ -25,6 +26,14 @@ from cmake_build.version import VERSION
 
 namespace = Collection.from_module(cmake_build_tasks)
 namespace.add_collection(Collection.from_module(cleanup))
+namespace.configure(cleanup.namespace.configuration())
+cleanup.cleanup_tasks.add_task(cleanup.clean_python)
+
+if sys.platform.startswith("win"):
+    # -- OVERRIDE SETTINGS: For platform=win32, ... (Windows)
+    namespace.configure({"run": dict(echo=True, pty=False)})
+else:
+    namespace.configure({"run": dict(echo=True, pty=True)})
 
 
 # ---------------------------------------------------------------------------
@@ -89,10 +98,8 @@ program = Program(version=VERSION, namespace=namespace,
                   config_class=CMakeBuildProgramConfig)
 
 
-
 # ---------------------------------------------------------------------------
 # AUTO-MAIN:
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    import sys
     sys.exit(program.run())
