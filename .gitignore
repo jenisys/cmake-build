@@ -3,6 +3,8 @@
 *.pyc
 *.pyo
 *$py.class
+__*.rst
+__*.txt
 build/
 dist/
 __pycache__/

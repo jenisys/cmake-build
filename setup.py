@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*
-# XXX-TODO
 """
 Setup script for cmake-build.
 
@@ -22,14 +21,11 @@ HERE = os.curdir
 sys.path.insert(0, HERE)
 
 from setuptools import find_packages, setup
-# XXX-JE-MAYBE:
-from setuptools_behave import behave_test
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION:
 # -----------------------------------------------------------------------------
 python_version = float("%s.%s" % sys.version_info[:2])
-BEHAVE = os.path.join(HERE, "behave")
 README = os.path.join(HERE, "README.rst")
 description = "".join(open(README).readlines()[4:])
 
@@ -65,9 +61,6 @@ setup(
         "console_scripts": [
             "cmake-build = cmake_build.__main__:program.run"
         ],
-        "distutils.commands": [
-            "behave_test = setuptools_behave:behave_test"
-        ]
     },
     # -- REQUIREMENTS:
     # SUPPORT: python2.7, python3.3 (or higher)
@@ -88,9 +81,6 @@ setup(
         "PyHamcrest >= 1.9",
         # PREPARED: "mock >= 2.0",
     ],
-    # cmdclass = {
-    #    "behave_test": behave_test,
-    # },
     extras_require={
         'docs': ["sphinx >= 1.8", "sphinx_bootstrap_theme >= 0.6"],
         'develop': [
