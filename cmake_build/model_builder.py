@@ -13,6 +13,7 @@ from cmake_build.model import (
     CMakeProjectWithoutProjectDirectory,
     CMakeProjectWithoutCMakeListsFile
 )
+from cmake_build.pathutil import posixpath_normpath
 
 
 # -----------------------------------------------------------------------------
@@ -130,6 +131,7 @@ def cmake_select_project_dirs(ctx, projects=None, strict=True):
     if not project_dirs:
         # -- CONSIDER CURRENT_DIR: As cmake.project
         curdir = Path(".").abspath()
+        curdir = posixpath_normpath(curdir)
         if Path("CMakeLists.txt").isfile():
             # pylint: disable=line-too-long
             print("CMAKE-BUILD: Using . (as default cmake.project; cwd={0})".format(curdir))
