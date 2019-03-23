@@ -5,6 +5,7 @@ Workhorse to build the CMake project model elements from parts.
 
 from __future__ import absolute_import, print_function
 from path import Path
+import os
 import six
 from invoke import Exit
 from cmake_build.host_platform import make_build_config_name
@@ -22,13 +23,21 @@ from cmake_build.pathutil import posixpath_normpath
 # pylint: disable=bad-whitespace
 HOST_BUILD_CONFIG_DEBUG   = make_build_config_name(build_type="debug")
 HOST_BUILD_CONFIG_RELEASE = make_build_config_name(build_type="release")
-BUILD_CONFIG_DEFAULT = "debug"
+BUILD_CONFIG_DEFAULT = os.environ.get("CMAKE_BUILD_CONFIG", "debug")
 BUILD_CONFIG_DEFAULT_MAP = dict(debug={}, release={})
 BUILD_CONFIG_DEFAULT_MAP[BUILD_CONFIG_DEFAULT] = {}
 BUILD_CONFIG_HOST_MAP = {
     HOST_BUILD_CONFIG_DEBUG: {},
     HOST_BUILD_CONFIG_RELEASE: {},
 }
+
+BUILD_CONFIGS_DEFAULT = [
+    "debug",
+    "release",
+]
+if BUILD_CONFIG_DEFAULT.startswith("host_"):
+    BUILD_CONFIGS_DEFAULT = ["host_{0}".format(name)
+                             for name in BUILD_CONFIGS_DEFAULT]
 
 
 # pylint: enable=bad-whitespace
@@ -164,6 +173,40 @@ def cmake_select_project_dirs(ctx, projects=None, strict=True):
             print(message)
 
 
+def cmake_select_build_configs(ctx, build_config):
+    """Select the build_configs that should be applied.
+
+    If the ``build_config="all"`` alias is used,
+    all currently configured build_configs are returned.
+
+    :param build_config:    Build config or build config alias to use.
+    :return: List of build_config names to use.
+    """
+    build_configs = [build_config]
+    if build_config == "all":
+        # -- SPECIAL-CASE BUILD_CONFIG ALIAS: all
+        # HINT: References all BUILD_CONFIGS or the DEFAULT ones.
+        build_configs = ctx.config.build_configs or BUILD_CONFIGS_DEFAULT
+        if isinstance(build_configs, dict):
+            build_configs = list(build_config.keys())
+        elif isinstance(build_configs, list):
+            build_configs2 = []
+            for build_config2 in build_configs:
+                if not build_config2:
+                    continue
+
+                if isinstance(build_config2, dict):
+                    # -- CASE: List of dicts with size=1.
+                    assert len(build_config2) == 1
+                    build_config2 = build_config2.keys()[0]
+                else:
+                    # -- CASE: Only build_config name is used (as string).
+                    assert isinstance(build_config2, six.string_types), \
+                           "REQUIRE-STRING: %r" % build_config
+                build_configs2.append(build_config2)
+            build_configs = build_configs2
+    return build_configs
+
 
 def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwargs):
     if not ctx.config.build_configs_map:
@@ -199,12 +242,15 @@ def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwar
 def make_cmake_projects(ctx, projects, build_config=None, strict=None, **kwargs):
     if strict is None:
         strict = True
-    project_dirs = cmake_select_project_dirs(ctx, projects, strict=strict)
+    project_dirs = list(cmake_select_project_dirs(ctx, projects, strict=strict))
+    build_configs = cmake_select_build_configs(ctx, build_config)
+
     cmake_projects = []
-    for project_dir in project_dirs:
-        cmake_project = make_cmake_project(ctx, project_dir, build_config,
-                                           strict=strict, **kwargs)
-        cmake_projects.append(cmake_project)
+    for _build_config in build_configs:
+        for project_dir in project_dirs:
+            cmake_project = make_cmake_project(ctx, project_dir, _build_config,
+                                               strict=strict, **kwargs)
+            cmake_projects.append(cmake_project)
     return cmake_projects
 
 
