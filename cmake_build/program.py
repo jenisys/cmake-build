@@ -18,6 +18,12 @@ from invoke.config import Config, merge_dicts
 
 
 # ---------------------------------------------------------------------------
+# CONSTANTS:
+# ---------------------------------------------------------------------------
+USE_PYTHON_CLEANUP = os.environ.get("CMAKE_BUILD_CLEANUP_PYTHON", "no") == "yes"
+
+
+# ---------------------------------------------------------------------------
 # CMAKE-BUILD TASKS:
 # ---------------------------------------------------------------------------
 from cmake_build import tasks as cmake_build_tasks
@@ -27,7 +33,9 @@ from cmake_build.version import VERSION
 namespace = Collection.from_module(cmake_build_tasks)
 namespace.add_collection(Collection.from_module(cleanup))
 namespace.configure(cleanup.namespace.configuration())
-cleanup.cleanup_tasks.add_task(cleanup.clean_python)
+if USE_PYTHON_CLEANUP:
+    # -- OPTIONAL PART:
+    cleanup.cleanup_tasks.add_task(cleanup.clean_python)
 
 if sys.platform.startswith("win"):
     # -- OVERRIDE SETTINGS: For platform=win32, ... (Windows)
