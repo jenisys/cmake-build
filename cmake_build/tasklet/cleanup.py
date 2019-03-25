@@ -8,7 +8,7 @@ PYTHON PACKAGE REQUIREMENTS:
 * pathlib (for ant-like wildcard patterns; since: python > 3.5)
 * pycmd (required-by: clean_python())
 
-clean task: Add Additional Directories and Files to be removed
+cleanup task: Add Additional Directories and Files to be removed
 -------------------------------------------------------------------------------
 
 Create an invoke configuration file (YAML of JSON) with the additional
@@ -17,8 +17,8 @@ configuration data:
 .. code-block:: yaml
 
     # -- FILE: invoke.yaml
-    # USE: clean.directories, clean.files to override current configuration.
-    clean:
+    # USE: cleanup.directories, cleanup.files to override current configuration.
+    cleanup:
         extra_directories:
             - **/tmp/
         extra_files:
@@ -30,8 +30,8 @@ Registration of Cleanup Tasks
 ------------------------------
 
 Other task modules often have an own cleanup task to recover the clean state.
-The :meth:`clean` task, that is provided here, supports the registration
-of additional cleanup tasks. Therefore, when the :meth:`clean` task is executed,
+The :meth:`cleanup` task, that is provided here, supports the registration
+of additional cleanup tasks. Therefore, when the :meth:`cleanup` task is executed,
 all registered cleanup tasks will be executed.
 
 EXAMPLE::
@@ -67,17 +67,19 @@ from path import Path
 # -----------------------------------------------------------------------------
 # CLEANUP UTILITIES:
 # -----------------------------------------------------------------------------
-def cleanup_accept_old_config(ctx):
-    ctx.cleanup.directories.extend(ctx.clean.directories or [])
-    ctx.cleanup.extra_directories.extend(ctx.clean.extra_directories or [])
-    ctx.cleanup.files.extend(ctx.clean.files or [])
-    ctx.cleanup.extra_files.extend(ctx.clean.extra_files or [])
-
-    ctx.cleanup_all.directories.extend(ctx.clean_all.directories or [])
-    ctx.cleanup_all.extra_directories.extend(ctx.clean_all.extra_directories or [])
-    ctx.cleanup_all.files.extend(ctx.clean_all.files or [])
-    ctx.cleanup_all.extra_files.extend(ctx.clean_all.extra_files or [])
-
+# def cleanup_accept_old_config(ctx):
+#     if "clean" in ctx.config:
+#         ctx.config.cleanup.directories.extend(ctx.config.clean.directories or [])
+#         ctx.config.cleanup.extra_directories.extend(ctx.config.clean.extra_directories or [])
+#         ctx.config.cleanup.files.extend(ctx.config.clean.files or [])
+#         ctx.config.cleanup.extra_files.extend(ctx.config.clean.extra_files or [])
+#
+#     if "clean_all" in ctx.config:
+#         ctx.config.cleanup_all.directories.extend(ctx.config.clean_all.directories or [])
+#         ctx.config.cleanup_all.extra_directories.extend(ctx.config.clean_all.extra_directories or [])
+#         ctx.config.cleanup_all.files.extend(ctx.config.clean_all.files or [])
+#         ctx.config.cleanup_all.extra_files.extend(ctx.config.clean_all.extra_files or [])
+#
 
 def execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=False):
     """Execute several cleanup tasks as part of the cleanup.
@@ -202,24 +204,28 @@ def path_glob(pattern, current_dir=None):
 @task
 def clean(ctx, dry_run=False):
     """Cleanup temporary dirs/files to regain a clean state."""
-    cleanup_accept_old_config(ctx)
-    directories = ctx.cleanup.directories or []
-    directories.extend(ctx.cleanup.extra_directories or [])
-    files = ctx.cleanup.files or []
-    files.extend(ctx.cleanup.extra_files or [])
+    # DISABLED: cleanup_accept_old_config(ctx)
+    directories = ctx.config.cleanup.directories or []
+    directories.extend(ctx.config.cleanup.extra_directories or [])
+    files = ctx.config.cleanup.files or []
+    files.extend(ctx.config.cleanup.extra_files or [])
 
     # -- PERFORM CLEANUP:
     execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=dry_run)
     cleanup_dirs(directories, dry_run=dry_run)
     cleanup_files(files, dry_run=dry_run)
 
+    # use_cleanup_python = ctx.config.cleanup.use_cleanup_python or False
+    # if use_cleanup_python:
+    #     clean_python(ctx, dry_run=dry_run)
+
 
 @task(name="all", aliases=("distclean",))
 def clean_all(ctx, dry_run=False):
     """Clean up everything, even the precious stuff.
-    NOTE: clean task is executed first.
+    NOTE: clean task is executed last.
     """
-    cleanup_accept_old_config(ctx)
+    # DISABLED: cleanup_accept_old_config(ctx)
     directories = ctx.config.cleanup_all.directories or []
     directories.extend(ctx.config.cleanup_all.extra_directories or [])
     files = ctx.config.cleanup_all.files or []
@@ -231,6 +237,10 @@ def clean_all(ctx, dry_run=False):
     cleanup_files(files, dry_run=dry_run)
     execute_cleanup_tasks(ctx, cleanup_all_tasks, dry_run=dry_run)
     clean(ctx, dry_run=dry_run)
+
+    # use_cleanup_python = ctx.config.cleanup_all.use_cleanup_python or False
+    # if use_cleanup_python:
+    #     clean_python(ctx, dry_run=dry_run)
 
 
 @task(name="python")
@@ -283,6 +293,7 @@ CLEANUP_EMPTY_CONFIG = {
     "files": [],
     "extra_directories": [],
     "extra_files": [],
+    "use_cleanup_python": False,
 }
 def make_cleanup_config(**kwargs):
     config_data = CLEANUP_EMPTY_CONFIG.copy()
@@ -295,10 +306,10 @@ namespace.add_task(clean, default=True)
 namespace.add_task(git_clean)
 namespace.configure({
     "cleanup": make_cleanup_config(
-        files=["*.bak", "*.log", "*.tmp", "**/.DS_Store", "**/*.~*~"]
+        files=["*.bak", "*.log", "*.tmp", "**/.DS_Store", "**/*.~*~"],
     ),
     "cleanup_all": make_cleanup_config(
-        directories=[".venv*", ".tox", "downloads", "tmp"]
+        directories=[".venv*", ".tox", "downloads", "tmp"],
     ),
     "git_clean": {
         "interactive": True,
@@ -307,8 +318,8 @@ namespace.configure({
         "path": ".",
     },
     # -- BACKWARD-COMPATIBLE: OLD-STYLE
-    "clean":     CLEANUP_EMPTY_CONFIG.copy(),
-    "clean_all": CLEANUP_EMPTY_CONFIG.copy(),
+    # DISABLED: "clean":     CLEANUP_EMPTY_CONFIG.copy(),
+    # DISABLED: "clean_all": CLEANUP_EMPTY_CONFIG.copy(),
 })
 
 
@@ -319,16 +330,26 @@ cleanup_all_tasks = Collection("cleanup_all_tasks")
 
 # -- EXTEND NORMAL CLEANUP-TASKS:
 # DISABLED: cleanup_tasks.add_task(clean_python)
-#
+
 # -----------------------------------------------------------------------------
 # EXTENSION-POINT: CONFIGURATION HELPERS: Can be used from other task modules
 # -----------------------------------------------------------------------------
 def config_add_cleanup_dirs(directories):
     # pylint: disable=protected-access
-    the_cleanup_directories = namespace._configuration["clean"]["directories"]
+    the_cleanup_directories = namespace._configuration["cleanup"]["directories"]
     the_cleanup_directories.extend(directories)
 
 def config_add_cleanup_files(files):
     # pylint: disable=protected-access
-    the_cleanup_files = namespace._configuration["clean"]["files"]
+    the_cleanup_files = namespace._configuration["cleanup"]["files"]
+    the_cleanup_files.extend(files)
+
+def config_add_cleanup_all_dirs(directories):
+    # pylint: disable=protected-access
+    the_cleanup_directories = namespace._configuration["cleanup_all"]["directories"]
+    the_cleanup_directories.extend(directories)
+
+def config_add_cleanup_all_files(files):
+    # pylint: disable=protected-access
+    the_cleanup_files = namespace._configuration["cleanup_all"]["files"]
     the_cleanup_files.extend(files)
