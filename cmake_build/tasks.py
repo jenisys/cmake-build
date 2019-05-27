@@ -168,7 +168,7 @@ def redo(ctx, project="all", build_config=None, generator=None,
     cmake_projects = make_cmake_projects(ctx, project,
                                          build_config=build_config,
                                          generator=generator,
-                                         init_args=args)
+                                         init_args=init_args)
     for cmake_project in cmake_projects:
         cmake_project.reinit(args=init_args)
         cmake_project.build(args=args)
