@@ -495,8 +495,15 @@ class CMakeProject(object):
         self.reinit(args=init_args)
         self.rebuild(args=args)
 
-    def ctest(self, args=None, init_args=None):
+    def ctest(self, args=None, init_args=None, verbose=False):
+        """Run ctest on CMake project.
+
+        :param args: CTest args to use (as string)
+        :param verbose: If true, run tests in verbose mode.
+        """
         ctest_args = ""
+        if verbose:
+            args = ["--verbose", args or ""]
         if args:
             ctest_args = make_args_string(args)
 
@@ -508,10 +515,18 @@ class CMakeProject(object):
             self.ctx.run("ctest {0}".format(ctest_args))
             print()
 
-    def test(self, args=None, init_args=None):
-        self.ctest(args=args, init_args=init_args)
+    def test(self, args=None, init_args=None, verbose=False):
+        """Run tests of CMake project (by using ctest).
+
+        :param args: CTest args to use (as string)
+        :param verbose: If true, run tests in verbose mode.
+        """
+        self.ctest(args=args, init_args=init_args, verbose=verbose)
 
 
+# ---------------------------------------------------------------------------
+# SPECIAL CASES: CMAKE PROJECTS WITH FAILURE SYNDROME(s)
+# ---------------------------------------------------------------------------
 class CMakeProjectWithSyndrome(object):
     """Common base class for :class:`CMakeProject`(s) that have a syndrome.
 
@@ -546,11 +561,9 @@ class CMakeProjectWithSyndrome(object):
         self.fail("CMAKE-INIT: {0} (SKIPPED: {1})".format(
                   self.relpath_to_project_dir(), self.syndrome))
 
-
     def build(self, **kwargs):
         self.fail("CMAKE-BUILD: {0} (SKIPPED: {1})".format(
                     self.relpath_to_project_dir(), self.syndrome))
-
 
     def clean(self, **kwargs):
         self.warn("CMAKE-CLEAN: {0} (SKIPPED: {1})".format(
@@ -585,7 +598,9 @@ class CMakeProjectWithoutCMakeListsFile(CMakeProjectWithSyndrome):
     SYNDROME = "not a cmake.project (missing: CMakeLists.txt file)"
 
 
-
+# ---------------------------------------------------------------------------
+# COMPOSITE RUNNER: For many cmake projects
+# ---------------------------------------------------------------------------
 class CMakeBuildRunner(object):
     """Build runner for many CMake projects (composite)."""
     def __init__(self, cmake_projects=None, target=None):

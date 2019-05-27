@@ -71,7 +71,10 @@ TASK_ARGS_HELP_MAP_WITH_INIT_ARGS = {
     "init-args": "CMake args to use to initialize the build_dir."
 }
 TASK_ARGS_HELP_MAP_WITH_INIT_ARGS.update(TASK_ARGS_HELP_MAP)
-
+TASK_ARGS_HELP_MAP_WITH_TEST_ARGS = {
+    "verbose": "Use verbose mode to run tests."
+}
+TASK_ARGS_HELP_MAP_WITH_TEST_ARGS.update(TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
 
 @task(help=TASK_ARGS_HELP_MAP)
 def init(ctx, project="all", build_config=None, generator=None, args=None):
@@ -96,14 +99,14 @@ def build(ctx, project="all", build_config=None, generator=None,
 
 
 @task(aliases=["ctest"],
-      help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
+      help=TASK_ARGS_HELP_MAP_WITH_TEST_ARGS)
 def test(ctx, project="all", build_config=None, generator=None,
-         args=None, init_args=None):
+         args=None, init_args=None, verbose=False):
     """Test one or all cmake projects."""
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.test(args=args, init_args=init_args)
+        cmake_project.test(args=args, init_args=init_args, verbose=verbose)
 
 
 @task(help=TASK_ARGS_HELP_MAP)
