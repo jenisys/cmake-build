@@ -52,7 +52,6 @@ def pytest(ctx, args="", options=""):
     options = options or ctx.pytest.options
     ctx.run("pytest {options} {args}".format(options=options, args=args))
 
-
 @task(help={
     "args": "Command line args for behave",
     "format": "Formatter to use (progress, pretty, ...)",
@@ -67,6 +66,9 @@ def behave(ctx, args="", format="", options=""):
         behave_cmd = "{python} bin/behave".format(python=sys.executable)
     else:
         behave_cmd = "{python} -m behave".format(python=sys.executable)
+
+    # -- SPECIAL-CASE / PREPARE-STEP:
+    cleanup_cmake_examples(ctx)
 
     for group_args in grouped_by_prefix(args, ctx.behave_test.scopes):
         ctx.run("{behave} -f {format} {options} {args}".format(
@@ -113,6 +115,12 @@ def coverage(ctx, args="", report="report", append=False):
     for report_format in report_formats:
         ctx.run("coverage {report_format}".format(report_format=report_format))
 
+@task
+def cleanup_cmake_examples(ctx):
+    """Ensure that CMake example projects are clean."""
+    print("ENSURE: CMake example projects are clean.")
+    ctx.run("cmake-build cleanup", hide=True)
+
 
 # ---------------------------------------------------------------------------
 # UTILITIES:
@@ -157,6 +165,7 @@ def grouped_by_prefix(args, prefixes):
 # ---------------------------------------------------------------------------
 namespace = Collection(clean, unittest, pytest, behave, coverage)
 namespace.add_task(test_all, default=True)
+namespace.add_task(cleanup_cmake_examples)
 namespace.configure({
     "test": {
         "clean": {
