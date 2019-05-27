@@ -35,9 +35,16 @@ BUILD_CONFIGS_DEFAULT = [
     "debug",
     "release",
 ]
+HOST_BUILD_CONFIGS_DEFAULT = [
+    "host_{0}".format(name) for name in BUILD_CONFIGS_DEFAULT
+]
 if BUILD_CONFIG_DEFAULT.startswith("host_"):
-    BUILD_CONFIGS_DEFAULT = ["host_{0}".format(name)
-                             for name in BUILD_CONFIGS_DEFAULT]
+    BUILD_CONFIGS_DEFAULT = HOST_BUILD_CONFIGS_DEFAULT
+
+BUILD_CONFIG_ALIAS_MAP = {
+    "all": BUILD_CONFIGS_DEFAULT,
+    "host_all": HOST_BUILD_CONFIGS_DEFAULT,
+}
 
 
 # pylint: enable=bad-whitespace
@@ -183,7 +190,9 @@ def cmake_select_build_configs(ctx, build_config):
     :return: List of build_config names to use.
     """
     build_configs = [build_config]
-    if build_config == "all":
+    if build_config == "host_all":
+        build_configs = HOST_BUILD_CONFIGS_DEFAULT
+    elif build_config == "all":
         # -- SPECIAL-CASE BUILD_CONFIG ALIAS: all
         # HINT: References all BUILD_CONFIGS or the DEFAULT ones.
         build_configs = ctx.config.build_configs or BUILD_CONFIGS_DEFAULT
@@ -240,6 +249,19 @@ def make_cmake_project(ctx, project_dir, build_config=None, strict=False, **kwar
 
 
 def make_cmake_projects(ctx, projects, build_config=None, strict=None, **kwargs):
+    """Create CMake projects from project and build_config combinations.
+
+    .. hint::
+
+        A build_config may represent a list of build_configs.
+        EXAMPLE: "all", "host_all"
+
+    :param ctx: Invoke task context to use
+    :param projects:     List of CMake projects to use.
+    :param build_config: Build config or build_config alias to use.
+    :param strict:
+    :return: List of CMake project objects.
+    """
     if strict is None:
         strict = True
     project_dirs = list(cmake_select_project_dirs(ctx, projects, strict=strict))
