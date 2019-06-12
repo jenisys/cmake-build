@@ -106,6 +106,7 @@ File "$WORKDIR/cmake_build.yaml":
 
 .. code-block:: yaml
 
+    # -- FILE: cmake_build.yaml
     cmake_generator: ninja                     # Default cmake.generator.
     cmake_install_prefix: /opt/{BUILD_CONFIG}  # Default CMAKE_INSTALL_PREFIX for all build_configs.
     cmake_defines:                             # Default CMake defines for all build_configs.
