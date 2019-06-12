@@ -6,6 +6,7 @@ This module contains utility functions to simplify usage of `CMake`_.
 """
 
 from __future__ import absolute_import, print_function
+from collections import OrderedDict
 from path import Path
 import six
 
@@ -61,6 +62,8 @@ CMAKE_BUILD_TYPES = [
     "Debug", "Release", "RelWithDebInfo", "MinSizeRel"
 ]
 
+CMAKE_BOOLEAN_VALUE_MAP = {False: "OFF", True: "ON"}
+
 
 # -----------------------------------------------------------------------------
 # CMAKE UTILS:
@@ -85,42 +88,13 @@ def make_build_dir_from_schema(config, build_config_name):
     return build_dir
 
 
-def cmake_defines_add(cmake_defines, name, value=None):
-    if value is None:
-        # -- ASSUME: Boolean flag
-        value = "ON"
-
-    done = False
-    for index, item in enumerate(cmake_defines):
-        item_name = item[0]
-        if name == item_name:
-            # -- CASE: Parameter is PRE-DEFINED (override it).
-            cmake_defines[index] = (name, value)
-            done = True
-            break
-
-    if not done:
-        # -- CASE: Parameter is UNDEFINED (up to now).
-        cmake_defines.append((name, value))
-    return cmake_defines
-
-
-def cmake_defines_remove(cmake_defines, name):
-    for index, item in enumerate(cmake_defines):
-        item_name = item[0]
-        if item_name == name:
-            del cmake_defines[index]
-            return cmake_defines
-    # -- NO-CHANGE:
-    return cmake_defines
-
-
 def cmake_cmdline_generator_option(generator):
     generator_option = ""
     if generator:
         cmake_generator = CMAKE_GENERATOR_ALIAS_MAP.get(generator) or generator
         generator_schema = '-G {0} '
-        if cmake_generator.count(" ") > 0:
+        needs_quoting = cmake_generator.count(" ") > 0
+        if needs_quoting:
             # -- CASE: Generator name w/ multiple words => QUOTE it.
             generator_schema = '-G "{0}" '
         generator_option = generator_schema.format(cmake_generator)
@@ -136,9 +110,15 @@ def cmake_cmdline_toolchain_option(toolchain):
 
 def cmake_normalize_defines(defines):
     # -- NORMALIZE-DEFINES:
+    if isinstance(defines, OrderedDict):
+        defines = defines.items()
+
     defines2 = []
     for d in defines:
-        if isinstance(d, dict):
+        if isinstance(d, tuple):
+            assert len(d) == 2
+            pass
+        elif isinstance(d, dict):
             assert len(d) == 1, "ENSURE: d.size=%d: %r" % (len(d), d)
             d = list(d.items())[0]
             assert len(d) == 2, "OOPS: %r (size=%d)" % (d, len(d))
@@ -153,26 +133,86 @@ def cmake_normalize_defines(defines):
     return defines2
 
 
-def cmake_cmdline_defines_option(defines, toolchain=None, build_type=None, **kwargs):
-    defines2 = cmake_normalize_defines(defines or [])
-    defines = []
-    # print("cmake_defines1: %r" % defines)
+# def cmake_cmdline_define_options(defines, toolchain=None, build_type=None,
+#                                  install_prefix=None, **kwargs):
+#     defines2 = cmake_normalize_defines(defines or [])
+#     defines = []
+#     # print("cmake_defines1: %r" % defines)
+#
+#     # parts = [
+#     #     ("CMAKE_BUILD_TYPE", build_type),
+#     #     ("CMAKE_INSTALL_PREFIX", install_prefix),
+#     # ]
+#     # builder = CMakeCmdlineBuilder4Defines(defines)
+#     # if toolchain:
+#     #     builder.add("CMAKE_TOOLCHAIN_FILE", Path(toolchain).abspath())
+#     # for name, value in parts:
+#     #     if value:
+#     #         builder.add((name, value))
+#
+#     if toolchain:
+#         cmake_defines_add(defines, "CMAKE_TOOLCHAIN_FILE", Path(toolchain).abspath())
+#     if build_type:
+#         cmake_defines_add(defines, "CMAKE_BUILD_TYPE", build_type)
+#     if install_prefix:
+#         cmake_defines_add(defines, "CMAKE_INSTALL_PREFIX", install_prefix)
+#     if kwargs:
+#         for name, value in six.iteritems(kwargs):
+#             cmake_defines_add(name, value)
+#     defines.extend(defines2)
+#     if not defines:
+#         return ""
+#
+#     define_options = []
+#     # print("cmake_defines2: %r" % defines)
+#     for name, value in defines:
+#         if value is not None:
+#             item = "-D{0}={1}".format(name, value)
+#         else:
+#             item = "-D{0}".format(name)
+#         define_options.append(item)
+#     return " ".join(define_options)
+
+def cmake_cmdline_define_options(defines, toolchain=None, build_type=None,
+                                 install_prefix=None, **kwargs):
+    # print("XXX defines= %r" % defines)
+    cmake_defines0 = OrderedDict(cmake_normalize_defines(defines or []))
+    cmake_defines = OrderedDict()
 
     if toolchain:
-        cmake_defines_add(defines, "CMAKE_TOOLCHAIN_FILE", Path(toolchain).abspath())
-    if build_type:
-        cmake_defines_add(defines, "CMAKE_BUILD_TYPE", build_type)
-    if kwargs:
-        for name, value in six.iteritems(kwargs):
-            cmake_defines_add(name, value)
-    defines.extend(defines2)
-    if not defines:
+        toolchain = Path(toolchain).abspath()
+
+    # -- STEP: Use precious defines first (ensure: ordering)
+    precious_defines = [
+        ("CMAKE_TOOLCHAIN_FILE", toolchain),
+        ("CMAKE_BUILD_TYPE", build_type),
+        ("CMAKE_INSTALL_PREFIX", install_prefix),
+    ]
+    for name, value in precious_defines:
+        other_value = None
+        if name in cmake_defines0:
+            # -- ENSURE: Item is removed.
+            other_value = cmake_defines0.pop(name)
+        if value is None:
+            # -- CASE: Use optional default as cmake_define
+            value = other_value
+        if value is None:
+            continue
+        cmake_defines[name] = value
+        assert name not in cmake_defines0
+
+    # -- STEP: Add remaining cmake_defines
+    cmake_defines.update(cmake_defines0)
+    cmake_defines.update(kwargs)
+    if not cmake_defines:
         return ""
 
     define_options = []
-    # print("cmake_defines2: %r" % defines)
-    for name, value in defines:
+    for name, value in cmake_defines.items():
         if value is not None:
+            if isinstance(value, bool):
+                # -- BOOL: Convert to OFF (False) or ON (True)
+                value = CMAKE_BOOLEAN_VALUE_MAP[value]
             item = "-D{0}={1}".format(name, value)
         else:
             item = "-D{0}".format(name)
@@ -181,17 +221,21 @@ def cmake_cmdline_defines_option(defines, toolchain=None, build_type=None, **kwa
 
 
 def cmake_cmdline(args=None, defines=None, generator=None,
-                  toolchain=None, build_type=None):
+                  toolchain=None, build_type=None, install_prefix=None,
+                  **named_defines):
     """Build a CMake command-line from the parts"""
     if args is None:
         args = ""
     if defines is None:
         defines = []
+    elif isinstance(defines, (dict, OrderedDict)):
+        defines = defines.items()
 
     generator_part = cmake_cmdline_generator_option(generator)
-    defines_part = cmake_cmdline_defines_option(defines,
+    defines_part = cmake_cmdline_define_options(defines,
                                                 toolchain=toolchain,
-                                                build_type=build_type)
+                                                build_type=build_type,
+                                                install_prefix=install_prefix)
     if not isinstance(args, six.string_types):
         args = " ".join([six.text_type(x) for x in args])
 

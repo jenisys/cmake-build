@@ -20,13 +20,16 @@ Invoke tasks for building C/C++ projects w/ CMake.
 """
 
 from __future__ import absolute_import, print_function
+from collections import OrderedDict
 from path import Path
+
 
 # -----------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------
 # from invoke.exceptions import Failure
 from invoke import task, Collection
+from invoke.exceptions import Exit
 
 # -- TASK-LIBRARY:
 from .tasklet.cleanup import cleanup_tasks, config_add_cleanup_dirs
@@ -107,6 +110,55 @@ def test(ctx, project="all", build_config=None, generator=None,
                                          generator=generator)
     for cmake_project in cmake_projects:
         cmake_project.test(args=args, init_args=init_args, verbose=verbose)
+
+
+INSTALL_TASK_ARGS_HELP = TASK_ARGS_HELP_MAP_WITH_INIT_ARGS
+INSTALL_TASK_ARGS_HELP.update({
+    "prefix": "CMAKE_INSTALL_PREFIX to use (or use preconfigured)",
+    "use_sudo": "Use sudo for install command"
+})
+
+
+@task(help=INSTALL_TASK_ARGS_HELP)
+def install(ctx, project="all", prefix=None, build_config=None, generator=None, use_sudo=False):
+    """Install the build artifacts of one or all cmake project(s)."""
+    cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
+                                         generator=generator)
+    for cmake_project in cmake_projects:
+        cmake_project.install(prefix=prefix, use_sudo=use_sudo)
+
+
+UPDATE_TASK_ARGS_HELP = TASK_ARGS_HELP_MAP_WITH_INIT_ARGS
+UPDATE_TASK_ARGS_HELP.update(
+    define="CMake define: NAME=VALUE (as string w/o whitespace)"
+)
+
+
+@task(aliases=["update_config"], iterable=["define"], help=UPDATE_TASK_ARGS_HELP)
+def update(ctx, define, project="all", build_config=None, generator=None):
+    """Update CMake build_dir configuration for one or all cmake project(s)."""
+    cmake_define_parts = define   # List of cmake definitions: NAME=VALUE
+    cmake_defines_data = OrderedDict()
+    bad_defines = []
+    for name_value in cmake_define_parts:
+        if "=" not in name_value or name_value.endswith("="):
+            print("INVALID-DEFINE: %s (use schema: name=value)" % name_value)
+            bad_defines.append(name_value)
+            continue
+
+        parts = name_value.split("=", 1)
+        name, value = parts
+        cmake_defines_data[name] = value
+
+    cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
+                                         generator=generator)
+    for cmake_project in cmake_projects:
+        cmake_project.update(**cmake_defines_data)
+
+    # -- POST-PROCESSING:
+    if not cmake_defines_data or bad_defines:
+        raise Exit("BAD-DEFINES: %s" % ", ".join(bad_defines))
+
 
 
 @task(help=TASK_ARGS_HELP_MAP)
@@ -214,11 +266,15 @@ def config(ctx):
 # -----------------------------------------------------------------------------
 namespace = Collection(redo, init, test, clean, reinit, rebuild, config)
 namespace.add_task(build, default=True)
+namespace.add_task(install)
+namespace.add_task(update)
 # DISABLED: namespace.add_task(build_all)
 
 TASKS_CONFIG_DEFAULTS = {
     "cmake_generator": None,
     "cmake_toolchain": None,
+    "cmake_install_prefix": None,
+    "cmake_defines": None,
     "build_dir_schema": "build.{BUILD_CONFIG}",
     "build_config": BUILD_CONFIG_DEFAULT,
     "build_configs": [],

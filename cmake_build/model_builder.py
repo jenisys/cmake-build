@@ -5,6 +5,7 @@ Workhorse to build the CMake project model elements from parts.
 
 from __future__ import absolute_import, print_function
 from path import Path
+from collections import OrderedDict
 import os
 import six
 from invoke import Exit
@@ -51,6 +52,44 @@ BUILD_CONFIG_ALIAS_MAP = {
 # -----------------------------------------------------------------------------
 # BUILD CONFIG RELATED:
 # -----------------------------------------------------------------------------
+# BOOLEAN_VALUE_MAP = {False: "OFF", True: "ON"}
+
+def cmake_define_normalize(item):
+    if isinstance(item, str):
+        item = (item, None)
+    elif isinstance(item, dict):
+        assert len(item) == 1, "OOPS: %r (expected: size=1)" % item
+        item = item.items()[0]
+    elif not isinstance(item, tuple):
+        raise ValueError("cmake_defines: unexpected item.type: %r" % item)
+
+    name, value = item
+    # if isinstance(value, bool):
+    #    item = (name, BOOLEAN_VALUE_MAP[value])
+    return item
+
+
+def cmake_defines_normalize(items):
+    if not items:
+        return []
+    elif isinstance(items, dict):
+        raise ValueError("cmake_defines: isa dict (expected: list)")
+
+    return [cmake_define_normalize(item) for item in items]
+
+def make_build_config_defaults(config):
+    cmake_defines_items0 = cmake_defines_normalize(config.cmake_defines or [])
+    build_config_defaults = CMakeProjectData().data
+    build_config_defaults["cmake_generator"] = config.cmake_generator or "ninja"
+    build_config_defaults["cmake_toolchain"] = config.cmake_toolchain
+    build_config_defaults["cmake_build_type"] = None
+    build_config_defaults["cmake_install_prefix"] = config.cmake_install_prefix or None
+    # build_config_defaults["cmake_defines"] = []  # MAYBE: ctx.config.cmake_defines
+    build_config_defaults["cmake_defines"] = OrderedDict(cmake_defines_items0)
+    build_config_defaults["build_dir_schema"] = config.build_dir_schema
+    return build_config_defaults
+
+
 def make_build_config(ctx, name=None):
     if name == "host_debug" or name == "auto":
         name = HOST_BUILD_CONFIG_DEBUG
@@ -58,16 +97,28 @@ def make_build_config(ctx, name=None):
         name = HOST_BUILD_CONFIG_RELEASE
 
     name = name or ctx.config.build_config or "default"
-    build_config_defaults = CMakeProjectData().data
-    build_config_defaults["cmake_generator"] = ctx.config.cmake_generator or "ninja"
-    build_config_defaults["cmake_toolchain"] = ctx.config.cmake_toolchain
-    build_config_defaults["cmake_build_type"] = None
-    build_config_defaults["cmake_defines"] = []  # MAYBE: ctx.config.cmake_defines
-    build_config_defaults["build_dir_schema"] = ctx.config.build_dir_schema
+    build_config_defaults = make_build_config_defaults(ctx.config)
     build_config_data = {}
     build_config_data.update(build_config_defaults)
     build_config_data2 = ctx.config.build_configs_map.get(name) or {}
     build_config_data.update(build_config_data2)
+
+    # -- STEP: build_config.cmake_defines inherits common.cmake_defines
+    cmake_defines = build_config_defaults["cmake_defines"]
+    cmake_defines_items = cmake_defines_normalize(
+        build_config_data2.get("cmake_defines", []))
+    if cmake_defines_items:
+        # -- INHERIT DEFAULT CMAKE_DEFINES (override and/or merge them):
+        use_override = cmake_defines_items[0][0] == "@override"
+        if use_override:
+            cmake_defines = OrderedDict(cmake_defines_items)
+        else:
+            # -- MERGE-AND-OVERRIDE:
+            # New items are added, existing items replaced/overwritten.
+            cmake_defines = cmake_defines.copy()
+            cmake_defines.update(OrderedDict(cmake_defines_items))
+
+    build_config_data["cmake_defines"] = cmake_defines
     return BuildConfig(name, build_config_data)
 
 

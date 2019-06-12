@@ -9,6 +9,8 @@ class MockConfig(object):
     defaults = {
         "build_config": os.environ.get("CMAKE_BUILD_CONFIG", "debug"),
         "build_configs": ["debug", "release"],
+        "cmake_install_prefix": None,
+        "cmake_defines": [],
         "projects": [],
         # DISABLED: "build_config_aliases": {"default": "debug"},
     }
@@ -24,6 +26,8 @@ class MockConfig(object):
         self.build_configs_map = {}
         self.cmake_generator = "ninja"
         self.cmake_toolchain = None
+        self.cmake_install_prefix = None
+        self.cmake_defines = None
         # DISABLED: self.build_config = self.build_config_aliases.get("default", "debug")
 
     def get(self, name, default=None):

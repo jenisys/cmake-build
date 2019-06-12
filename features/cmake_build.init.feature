@@ -147,7 +147,7 @@ Feature: cmake-build init Command
       """
     And the command output should not contain "cmake -G"
 
-  Scenario: CMake Project is initialized but configfile.build_config data differs (perform: reinit; cmake_build_type)
+  Scenario: CMake Project is initialized but configfile.build_config data differs (perform: update; cmake_build_type)
     When I run "cmake-build init"
     Then the CMake project is initialized
     But note that "INTERESTING PART: Starts here"
@@ -165,19 +165,19 @@ Feature: cmake-build init Command
     When I run "cmake-build init"
     Then it should pass with:
       """
-      CMAKE-INIT:  library_hello/build.debug (NEEDS-REINIT)
-      CMAKE-INIT:  library_hello/build.debug (using cmake.generator=ninja)
+      CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE)
+      CMAKE-UPDATE: library_hello/build.debug
       """
     And the command output should contain:
       """
-      cmake -G Ninja -DCMAKE_BUILD_TYPE=OTHER ..
+      cmake -DCMAKE_BUILD_TYPE=OTHER ..
       """
     And the command output should contain:
       """
       -- Build files have been written to: {__WORKDIR__}/library_hello/build.debug
       """
 
-  Scenario: CMake Project is initialized but configfile.build_config data differs (perform: reinit; cmake_defines)
+  Scenario: CMake Project is initialized but configfile.build_config data differs (perform: update; cmake_defines)
     When I run "cmake-build init"
     Then the CMake project is initialized
     But note that "INTERESTING PART: Starts here"
@@ -197,12 +197,12 @@ Feature: cmake-build init Command
     When I run "cmake-build init"
     Then it should pass with:
       """
-      CMAKE-INIT:  library_hello/build.debug (NEEDS-REINIT)
-      CMAKE-INIT:  library_hello/build.debug (using cmake.generator=ninja)
+      CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE)
+      CMAKE-UPDATE: library_hello/build.debug
       """
     And the command output should contain:
       """
-      cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DNEW_PARAM=foo ..
+      cmake -DCMAKE_BUILD_TYPE=Debug -DNEW_PARAM=foo ..
       """
     And the command output should contain:
       """
@@ -243,3 +243,4 @@ Feature: cmake-build init Command
       """
       CMAKE-BUILD: OOPS, no projects are specified (STOP HERE).
       """
+    But note that "this is no problem if a CMakeLists.txt file exists"

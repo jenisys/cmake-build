@@ -21,7 +21,7 @@ build_configs:
       # cmake_build_type: Debug
       # cmake_toolchain: cmake/toolchain/XXX.cmake
       cmake_defines:
-        - CMAKE_BUILD_CONFIG: "debug"
+        - BUILD_TESTING: on
 
   - release:
       cmake_build_type: MinSizeRel

@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import absolute_import, print_function
+from collections import OrderedDict
 from cmake_build.model import \
     CMakeProject, CMakeProjectData, CMakeProjectPersistentData, BuildConfig, \
     CMAKE_CONFIG_DEFAULTS
@@ -14,6 +15,9 @@ import pytest
 # ---------------------------------------------------------------------------
 # CMAKE_PROJECT_BUILD_CONFIG_FILENAME = ".cmake_build.build_config.json"
 # CMAKE_PROJECT_BUILD_CONFIG_FILENAME = CMakeProjectPersistentData.FILE_BASENAME
+
+# -- SUPPORT EQUAL-TO COMPARISON:
+CMAKE_CONFIG_DEFAULTS.update(cmake_defines=OrderedDict())
 
 
 # ---------------------------------------------------------------------------
@@ -72,9 +76,10 @@ class TestCMakeProjectData(object):
 
     def test_ctor__without_data_contains_default_values(self):
         project_data = CMakeProjectData()
+        expected = CMAKE_CONFIG_DEFAULTS.copy()
         assert len(project_data.data) > 0
         assert len(project_data.data) == len(CMAKE_CONFIG_DEFAULTS)
-        assert project_data.data == CMAKE_CONFIG_DEFAULTS
+        assert project_data.data == expected
         assert "cmake_toolchain" in project_data
         assert "cmake_generator" in project_data
         assert "cmake_build_type" in project_data
@@ -262,25 +267,25 @@ class TestBuildConfig(object):
 
     def test_cmake_defines__with_one_item(self):
         build_config = BuildConfig(cmake_defines=[("one", "VALUE_1")])
-        assert build_config.cmake_defines == [("one", "VALUE_1")]
-        assert build_config.get("cmake_defines") == [("one", "VALUE_1")]
-        assert build_config["cmake_defines"] == [("one", "VALUE_1")]
-        assert build_config.data.get("cmake_defines") == [("one", "VALUE_1")]
+        assert build_config.cmake_defines.items() == [("one", "VALUE_1")]
+        assert build_config.get("cmake_defines").items() == [("one", "VALUE_1")]
+        assert build_config["cmake_defines"].items() == [("one", "VALUE_1")]
+        assert build_config.data.get("cmake_defines").items() == [("one", "VALUE_1")]
 
 
     def test_cmake_defines__without_any(self):
         build_config = BuildConfig()
-        assert build_config.cmake_defines == []
-        assert build_config.get("cmake_defines") == []
-        assert build_config["cmake_defines"] == []
+        assert build_config.cmake_defines.items() == []
+        assert build_config.get("cmake_defines").items() == []
+        assert build_config["cmake_defines"].items() == []
 
     def test_cmake_defines__set(self):
         build_config = BuildConfig()
         definitions = [("one", "VALUE_1"), ("two", "VALUE_2")]
         build_config.cmake_defines = definitions
-        assert build_config.cmake_defines == definitions
-        assert build_config.get("cmake_defines") == definitions
-        assert build_config["cmake_defines"] == definitions
+        assert build_config.cmake_defines.items() == definitions
+        assert build_config.get("cmake_defines").items() == definitions
+        assert build_config["cmake_defines"].items() == definitions
 
     def test_cmake_defines_add__with_new_item_appends(self):
         build_config = BuildConfig(cmake_defines=[("one", "VALUE_1")])
@@ -289,38 +294,38 @@ class TestBuildConfig(object):
             ("one", "VALUE_1"),
             ("NEW", "NEW_VALUE"),
         ]
-        assert build_config.cmake_defines == expected
-        assert build_config.get("cmake_defines") == expected
-        assert build_config["cmake_defines"] == expected
-        assert build_config.data.get("cmake_defines") == expected
+        assert build_config.cmake_defines.items() == expected
+        assert build_config.get("cmake_defines").items() == expected
+        assert build_config["cmake_defines"].items() == expected
+        assert build_config.data.get("cmake_defines").items() == expected
 
     def test_cmake_defines_add__with_existing_item_overrides(self):
         build_config = BuildConfig(cmake_defines=[("one", "VALUE_1")])
         build_config.cmake_defines_add("one", "NEW_VALUE")
         expected = [("one", "NEW_VALUE")]
-        assert build_config.cmake_defines == expected
-        assert build_config.get("cmake_defines") == expected
-        assert build_config["cmake_defines"] == expected
-        assert build_config.data.get("cmake_defines") == expected
+        assert build_config.cmake_defines.items() == expected
+        assert build_config.get("cmake_defines").items() == expected
+        assert build_config["cmake_defines"].items() == expected
+        assert build_config.data.get("cmake_defines").items() == expected
 
     def test_cmake_defines_remove__with_unknown_item(self):
         build_config = BuildConfig(cmake_defines=[("one", "VALUE_1")])
         build_config.cmake_defines_remove("UNKNOWN")
         expected = [("one", "VALUE_1")]
-        assert build_config.cmake_defines == expected
-        assert build_config.get("cmake_defines") == expected
-        assert build_config["cmake_defines"] == expected
-        assert build_config.data.get("cmake_defines") == expected
+        assert build_config.cmake_defines.items() == expected
+        assert build_config.get("cmake_defines").items() == expected
+        assert build_config["cmake_defines"].items() == expected
+        assert build_config.data.get("cmake_defines").items() == expected
 
     def test_cmake_defines_add__with_existing_item_removes_it(self):
         definitions = [("one", "VALUE_1"), ("two", "VALUE_2")]
         build_config = BuildConfig(cmake_defines=definitions)
         build_config.cmake_defines_remove("two")
         expected = [("one", "VALUE_1")]
-        assert build_config.cmake_defines == expected
-        assert build_config.get("cmake_defines") == expected
-        assert build_config["cmake_defines"] == expected
-        assert build_config.data.get("cmake_defines") == expected
+        assert build_config.cmake_defines.items() == expected
+        assert build_config.get("cmake_defines").items() == expected
+        assert build_config["cmake_defines"].items() == expected
+        assert build_config.data.get("cmake_defines").items() == expected
 
     @pytest.mark.parametrize("build_config_name, expected", [
         ("arm64_Debug", "Debug"),

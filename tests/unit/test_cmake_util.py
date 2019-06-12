@@ -55,59 +55,6 @@ def test_make_build_dir_from_schema__without_config_build_dir_schema(monkeypatch
 
 
 # ---------------------------------------------------------------------------
-# TESTS FOR: cmake_defines_add()
-# ---------------------------------------------------------------------------
-TEST_DEFINITIONS = [
-    ("one", "ONE_VALUE"),
-    ("two", "TWO_VALUE"),
-    ("three", "THREE_VALUE"),
-]
-
-
-@pytest.mark.parametrize("define", [
-    ("one", "ONE"),
-    ("two", "TWO_VALUE"),
-])
-def test_cmake_defines_add__with_new_define_is_appended(define):
-    definitions = []
-    name, value = define
-    cmake_defines_add(definitions, name, value)
-    assert len(definitions) == 1
-    assert definitions[-1] == define, "ENSURE: Appended (LAST-ITEM)"
-
-
-@pytest.mark.parametrize("definitions, define", [
-    (list(TEST_DEFINITIONS), ("one",  "ON")),
-    (list(TEST_DEFINITIONS), ("two", "TWO_NEW_VALUE")),
-    (list(TEST_DEFINITIONS), ("three", True)),
-])
-def test_cmake_defines_add__with_existing_define_is_replaced(definitions, define):
-    initial_size = len(definitions)
-    name, value = define
-    cmake_defines_add(definitions, name, value)
-    assert len(definitions) == initial_size
-    assert define in definitions, "ENSURE: New define replaces existing"
-
-
-def test_cmake_defines_add__with_value_none_has_value_on():
-    # -- CASE 1: Call with value=None
-    definitions = []
-    expected_item = ("one", "ON")
-    cmake_defines_add(definitions, "one", value=None)
-    assert len(definitions) == 1
-    assert expected_item in definitions, "ENSURE: Uses value=ON"
-
-
-def test_cmake_defines_add__without_value_none_has_value_on():
-    # -- CASE 2: Call without value
-    definitions = []
-    expected_item = ("one", "ON")
-    cmake_defines_add(definitions, "one")
-    assert len(definitions) == 1
-    assert expected_item in definitions, "ENSURE: Uses value=ON"
-
-
-# ---------------------------------------------------------------------------
 # TESTS FOR: cmake_cmdline_generator_option()
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("generator, expected", [
@@ -191,30 +138,30 @@ def test_cmake_normalize_defines__with_string(expected, defines):
 
 
 # ---------------------------------------------------------------------------
-# TESTS FOR: cmake_cmdline_defines_option()
+# TESTS FOR: cmake_cmdline_define_options()
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("expected, defines", [
     ("-Done=VALUE_1",               [("one", "VALUE_1")]),
     ("-Done=VALUE_1 -DTWO=value_2", [("one", "VALUE_1"), ("TWO", "value_2")]),
 ])
-def test_cmake_cmdline_defines_option__with_defines(expected, defines):
-    actual = cmake_cmdline_defines_option(defines)
+def test_cmake_cmdline_define_options__with_defines(expected, defines):
+    actual = cmake_cmdline_define_options(defines)
     assert actual == expected
 
 
 @pytest.mark.parametrize("expected, defines", [
     ("-Dfoo", [("foo", None)]),
 ])
-def test_cmake_cmdline_defines_option__with_value_none(expected, defines):
-    actual = cmake_cmdline_defines_option(defines)
+def test_cmake_cmdline_define_options__with_value_none(expected, defines):
+    actual = cmake_cmdline_define_options(defines)
     assert actual == expected
 
 
 @pytest.mark.parametrize("expected, toolchain, defines", [
     ("-DCMAKE_TOOLCHAIN_FILE=$ABSPATH/t1.cmake -Done=VALUE_1", "t1.cmake", [("one", "VALUE_1")]),
 ])
-def test_cmake_cmdline_defines_option__with_defines_and_toolchain(expected, toolchain, defines):
-    actual = cmake_cmdline_defines_option(defines, toolchain=toolchain)
+def test_cmake_cmdline_define_options__with_defines_and_toolchain(expected, toolchain, defines):
+    actual = cmake_cmdline_define_options(defines, toolchain=toolchain)
     normalized = actual.replace(Path(".").abspath(), "$ABSPATH").replace("\\", "/")
     assert normalized == expected
 
@@ -248,7 +195,7 @@ def test_cmake_cmdline__with_toolchain(toolchain):
     [("one", "VALUE_1"), ("two", "value_2")],
 ])
 def test_cmake_cmdline__with_defines(defines):
-    expected = cmake_cmdline_defines_option(defines)
+    expected = cmake_cmdline_define_options(defines)
     actual = cmake_cmdline(defines=defines)
     assert actual == expected
 
@@ -279,8 +226,8 @@ def test_cmake_cmdline__with_args_as_list(args):
     ("--warn-uninitialized", [("one", "VALUE_1"), ("two", "VALUE_2")]),
 ])
 def test_cmake_cmdline__with_args_and_defines(args, defines):
-    defines_option = cmake_cmdline_defines_option(defines) + " "
-    expected = "{0} {1}".format(defines_option, args).replace("  ", " ")
+    define_options = cmake_cmdline_define_options(defines) + " "
+    expected = "{0} {1}".format(define_options, args).replace("  ", " ")
     actual = cmake_cmdline(args, defines=defines)
     assert actual == expected
 
