@@ -3,7 +3,7 @@ cmake-build
 
 .. _CMake: https://cmake.org
 .. _`cmake-build`: https://github.com/jenisys/cmake-build
-.. _`ninja-build`: https://ninja-build.org
+.. _`ninja`: https://ninja-build.org
 
 `cmake-build`_ simplifies the usage of `CMake`_ by making it directly usable
 as a build system.
