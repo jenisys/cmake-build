@@ -193,6 +193,24 @@ class CMakeProjectPersistentData(CMakeProjectData, PersistentData):
         CMakeProjectData.__init__(self, data=the_data, **kwargs)
         PersistentData.__init__(self, filename, data=self.data)
 
+    def assign(self, data):
+        # -- WORKS WITH: this-class or dict-like
+        the_data = data
+        if isinstance(data, self.__class__):
+            the_data = data.data
+
+        # -- ENSURE: All parameters exists, at least with default values.
+        # HINT: This is needed if newer cmake-builds stumbles upon older persistent schema.
+        data = {
+            "cmake_build_type": None,
+            "cmake_generator": None,
+            "cmake_toolchain": None,
+            "cmake_install_prefix": None,
+            "cmake_defines": {},
+        }
+        data.update(the_data)
+        self.data = data
+
     # def make_data(self):
     #     data = self.data.copy()
     #     cmake_defines = data.get("cmake_defines", None)
@@ -480,7 +498,11 @@ class CMakeProject(object):
         return self.project_build_dir.exists() and self.has_cmake_build_data_file()
 
     def needs_reinit(self):
-        return ((self.current_data != self.stored_data) or
+        # OLD: return ((self.current_data != self.stored_data) or
+        #               not self.cmake_build_data_filename.exists())
+        current_cmake_generator = self.current_data.get("cmake_generator")
+        stored_cmake_generator = self.stored_data.get("cmake_generator")
+        return ((current_cmake_generator != stored_cmake_generator) or
                 not self.cmake_build_data_filename.exists())
                 # -- MAYBE: or self.dirty
 
@@ -490,7 +512,9 @@ class CMakeProject(object):
             "cmake_toolchain", "cmake_build_type", "cmake_install_prefix", "cmake_defines"
         ]
         for name in names:
-            if self.current_data[name] != self.stored_data[name]:
+            stored_param = self.stored_data.get(name)
+            current_param = self.current_data.get(name)
+            if current_param != stored_param:
                 return True
         # -- OTHERWISE:
         return False
@@ -498,13 +522,14 @@ class CMakeProject(object):
     def ensure_init(self, args=None, cmake_generator=None):  # @simplify
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         needs_update = self.needs_update()
-        if self.initialized and not (self.needs_reinit() or needs_update):
+        needs_reinit = self.needs_reinit()
+        if self.initialized and not (needs_reinit or needs_update):
             # -- CASE: ALREADY DONE w/ same cmake_generator.
             # pylint: disable=line-too-long
             print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})." \
                   .format(project_build_dir, self.cmake_generator))
             return False
-        elif self.initialized and needs_update:
+        elif self.initialized and needs_update and not needs_reinit:
             print("CMAKE-INIT:  {0} (NEEDS-UPDATE)".format(project_build_dir))
             self.update()
             return True

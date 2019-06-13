@@ -104,7 +104,7 @@ class PersistentData(object):
 
         with open(filename, "r", encoding="UTF-8") as f:
             text = f.read()
-            data = cls.parse(text)
+            stored_data = cls.parse(text)
             persistent_object.clear()
-            persistent_object.assign(data)
+            persistent_object.assign(stored_data)
         return persistent_object

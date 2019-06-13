@@ -61,6 +61,15 @@ def assert_cmake_project_used_reinit_using_captured(cmake_project, captured, cma
     assert_cmake_project_used_init_using_captured(cmake_project, captured, cmake_generator)
 
 
+def assert_cmake_project_used_update_using_captured(cmake_project, captured, cmake_generator=""):
+    build_dir = cmake_project.project_dir.relpathto(cmake_project.project_build_dir)
+    assert "CMAKE-INIT:  {0} (NEEDS-UPDATE)".format(build_dir) in captured.out
+    assert "CMAKE-INIT:  {0} (using cmake.generator={1})".format(build_dir, cmake_generator) in captured.out
+    # -- NOT-CONTAINED IN CAPTURED OUTPUT:
+    assert "CMAKE-INIT:  {0} (NEEDS-REINIT)".format(build_dir) not in captured.out
+    assert "CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator=".format(build_dir) not in captured.out
+
+
 def assert_cmake_project_skipped_reinit_using_captured(cmake_project, captured, cmake_generator=""):
     build_dir = cmake_project.project_dir.relpathto(cmake_project.project_build_dir)
     assert "CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator=".format(build_dir) in captured.out
@@ -433,7 +442,7 @@ class TestCMakeProject(object):
             assert ctx.last_command is None
             assert_cmake_project_skipped_reinit_using_captured(cmake_project1, captured)
 
-    def test_init__reinit_with_other_data(self, tmpdir, capsys):
+    def test_init__performs_reinit_with_other_cmake_generator(self, tmpdir, capsys):
         ctx = MockContext()
         project_dir = Path(str(tmpdir)).abspath()
         project_build_dir = project_dir/"build"
@@ -541,7 +550,7 @@ class TestCMakeProject(object):
             # assert "CMAKE-INIT: build (NEEDS-REINIT)" not in captured.out
             # assert "CMAKE-INIT: build (using cmake.generator=ninja)" not in captured.out
 
-    def test_build__reinit_with_existing_build_dir_and_other_data(self, tmpdir, capsys):
+    def test_build__performs_reinit_with_existing_build_dir_and_other_cmake_generator(self, tmpdir, capsys):
         ctx = MockContext()
         project_dir = Path(str(tmpdir))
         project_build_dir = project_dir/"build"
@@ -581,13 +590,11 @@ class TestCMakeProject(object):
             captured = capsys.readouterr()
             assert_cmake_project_used_reinit_using_captured(cmake_project2, captured,
                                                             cmake_generator="make")
-
             # assert "CMAKE-INIT:  build (NEEDS-REINIT)" in captured.out
             # assert "CMAKE-INIT:  build (using cmake.generator=make)" in captured.out
             # assert "CMAKE-BUILD: build" in captured.out
             # -- NOT-CONTAINED IN CAPTURED OUTPUT:
             # assert "CMAKE-INIT:  build (SKIPPED: " not in captured.out
-
 
     def test_init__skips_reinit_with_existing_build_dir_and_generator_none(self, tmpdir, capsys):
         ctx = MockContext()
@@ -633,3 +640,38 @@ class TestCMakeProject(object):
             # -- NOT-CONTAINED IN CAPTURED OUTPUT:
             # assert "CMAKE-INIT:  build (NEEDS-REINIT)" not in captured.out
             # assert "CMAKE-INIT:  build (using cmake.generator=make)" not in captured.out
+
+    def test_init__when_build_dir_exists_with_other_persistent_schema(self, tmpdir, capsys):
+        ctx = MockContext()
+        project_dir = Path(str(tmpdir))
+        project_build_dir = project_dir/"build"
+        build_config = BuildConfig(cmake_generator="ninja", cmake_build_type="debug")
+        assert not project_build_dir.isdir()
+
+        # -- STEP 1: First cmake_project.init
+        with cd(project_dir):
+            cmake_project1 = CMakeProject(ctx, project_dir, project_build_dir, build_config)
+            cmake_project1.init()
+            cmake_build_filename = project_build_dir / CMakeProjectPersistentData.FILE_BASENAME
+            assert project_build_dir.exists(), "ENSURE: project_build_dir exists"
+            assert cmake_build_filename.exists()
+
+            # -- STEP: Fake cmake-build init with other persistent data schema.
+            # HINT: May occur when cmake-build is updated, but project_build_dir still exists.
+            with open(cmake_build_filename, "w") as f:
+                f.write("""{ "other": 123, "cmake_generator": "ninja" }""")
+
+        # -- STEP 2: Second try to cmake_project.init()
+        # ENSURE: No failure / AssertionError occurs
+        with cd(project_dir):
+            cmake_project2 = CMakeProject(ctx, project_dir, project_build_dir, build_config)
+            assert cmake_project2.initialized
+            assert not cmake_project2.needs_reinit()
+            assert cmake_project2.needs_update()
+            cmake_project2.init()
+
+            assert not cmake_project2.needs_reinit()
+            assert not cmake_project2.needs_update()
+            captured = capsys.readouterr()
+            assert_cmake_project_used_update_using_captured(cmake_project2, captured,
+                                                            cmake_generator="ninja")
