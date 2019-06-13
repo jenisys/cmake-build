@@ -34,5 +34,5 @@ add_custom_target(run-hello ALL
 # cmake .. -DCMAKE_INSTALL_PREFIX=../_install
 # make install
 install(TARGETS hello_app DESTINATION bin)
-# install(TARGETS hello1_lib DESTINATION lib)
+# ALREADY: install(TARGETS hello1_lib DESTINATION lib)
 # install(FILES test.h DESTINATION include)
