@@ -336,6 +336,9 @@ class CMakeProject(object):
                 value = value.replace("{BUILD_CONFIG}", self.build_config.name) \
                          .replace("{CMAKE_BUILD_TYPE}",
                                   self.current_data.cmake_build_type) \
+                         .replace("{CMAKE_PROJECT_DIR}", self.project_dir) \
+                         .replace("{CMAKE_PROJECT_BUILD_DIR}", self.project_build_dir) \
+                         .replace("{CWD}", os.getcwd()) \
                          .replace("{HOME}", os.environ.get("HOME", "__UNKOWN_HOME"))
             elif isinstance(value, dict):
                 data = value
