@@ -2,8 +2,8 @@ cmake-build
 =============================================================================
 
 .. _CMake: https://cmake.org
+.. _ninja: https://ninja-build.org
 .. _`cmake-build`: https://github.com/jenisys/cmake-build
-.. _`ninja`: https://ninja-build.org
 
 `cmake-build`_ simplifies the usage of `CMake`_ by making it directly usable
 as a build system.
@@ -15,7 +15,7 @@ as a build system.
 * supports many build systems, like:
   `ninja`_, makefiles, Eclipse CDT build system, VisualStudio solutions, ...
 
-The normal usage of `CMake` is:
+The normal usage of `CMake`_ is:
 
 .. code-block:: sh
 
@@ -38,6 +38,17 @@ The first is automatically execute if it is needed.
     ...     # Init CMake project (if needed), then builds CMake project.
 
 
+Goals of `cmake-build`_:
+
+* Simplify command-line usage of `CMake`_ (one step procedure)
+* Provide core configuration aspects of CMake project(s) in a configuration file
+* Supports multiple **build configurations** and **toolchains**
+* Can build multiple `CMake`_ projects at once
+
+
+cmake-build Details
+-----------------------------------------------------------------------------
+
 `cmake-build`_ supports the following commands:
 
 .. code-block:: sh
@@ -54,8 +65,12 @@ The first is automatically execute if it is needed.
     $ cmake-build reinit
     ...     # Remove the CMake project build-dir, then performs init again.
 
+    $ cmake-build test
+    ...     # Run tests with ctest (if supported by CMake project).
+
+
     $ cmake-build install
-    ...     # Install build artifacts to CMAKE_INSTALL_PREFIX
+    ...     # Install build artifacts to CMAKE_INSTALL_PREFIX.
 
     $ cmake-build clean
     ...     # Remove any build artifacts by using the build system.
@@ -92,18 +107,10 @@ The first is automatically execute if it is needed.
     ...     # Determines build_config=Linux_x86_64_debug (for example)
 
 
-Goals of `cmake-build`:
-
-* Simplify command-line usage of `CMake`_ (one step procedure)
-* Provide core configuration aspects of CMake project(s) in a configuration file
-* Supports multiple **build configurations** and **toolchains**
-* Can build multiple `CMake`_ projects at once
-
 
 Configuration File Support
 -----------------------------------------------------------------------------
 
-File "$WORKDIR/cmake_build.yaml":
 
 .. code-block:: yaml
 
