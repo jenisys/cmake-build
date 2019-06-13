@@ -59,7 +59,7 @@ def cmake_define_normalize(item):
         item = (item, None)
     elif isinstance(item, dict):
         assert len(item) == 1, "OOPS: %r (expected: size=1)" % item
-        item = item.items()[0]
+        item = list(item.items())[0]
     elif not isinstance(item, tuple):
         raise ValueError("cmake_defines: unexpected item.type: %r" % item)
 
@@ -258,7 +258,7 @@ def cmake_select_build_configs(ctx, build_config):
                 if isinstance(build_config2, dict):
                     # -- CASE: List of dicts with size=1.
                     assert len(build_config2) == 1
-                    build_config2 = build_config2.keys()[0]
+                    build_config2 = list(build_config2.keys())[0]
                 else:
                     # -- CASE: Only build_config name is used (as string).
                     assert isinstance(build_config2, six.string_types), \
