@@ -1,9 +1,6 @@
 # -*- coding -*-
 """
 Provides some utility functions for path.
-
-TODO:
-  matcher that ignores empty lines and whitespace and has contains comparison
 """
 
 from __future__ import absolute_import

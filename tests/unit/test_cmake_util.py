@@ -150,7 +150,7 @@ def test_cmake_cmdline_define_options__with_defines(expected, defines):
 
 
 @pytest.mark.parametrize("expected, defines", [
-    ("-Dfoo", [("foo", None)]),
+    ("-Dfoo=ON", [("foo", None)]),
 ])
 def test_cmake_cmdline_define_options__with_value_none(expected, defines):
     actual = cmake_cmdline_define_options(defines)

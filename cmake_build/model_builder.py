@@ -11,10 +11,10 @@ import six
 from invoke import Exit
 from cmake_build.host_platform import make_build_config_name
 from cmake_build.model import (
-    CMakeProject, CMakeProjectData, BuildConfig,
-    CMakeProjectWithoutProjectDirectory,
+    CMakeProject, CMakeProjectWithoutProjectDirectory,
     CMakeProjectWithoutCMakeListsFile
 )
+from cmake_build.config import CMakeProjectConfig, BuildConfig
 from cmake_build.pathutil import posixpath_normpath
 
 
@@ -79,7 +79,7 @@ def cmake_defines_normalize(items):
 
 def make_build_config_defaults(config):
     cmake_defines_items0 = cmake_defines_normalize(config.cmake_defines or [])
-    build_config_defaults = CMakeProjectData().data
+    build_config_defaults = CMakeProjectConfig().data
     build_config_defaults["cmake_generator"] = config.cmake_generator or "ninja"
     build_config_defaults["cmake_toolchain"] = config.cmake_toolchain
     build_config_defaults["cmake_build_type"] = None

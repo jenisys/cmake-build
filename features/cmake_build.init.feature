@@ -162,10 +162,10 @@ Feature: cmake-build init Command
           - library_hello
         """
     But note that "CHANGED: cmake_build_type=OTHER (was: Debug)"
-    When I run "cmake-build init"
+    When I run "cmake-build init --clean-config"
     Then it should pass with:
       """
-      CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE)
+      CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE, using cmake.generator=ninja)
       CMAKE-UPDATE: library_hello/build.debug
       """
     And the command output should contain:
@@ -194,10 +194,10 @@ Feature: cmake-build init Command
           - library_hello
         """
     But note that "CHANGED: cmake_defines=... (was: EMPTY)"
-    When I run "cmake-build init"
+    When I run "cmake-build init --clean-config"
     Then it should pass with:
       """
-      CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE)
+      CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE, using cmake.generator=ninja)
       CMAKE-UPDATE: library_hello/build.debug
       """
     And the command output should contain:

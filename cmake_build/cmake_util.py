@@ -6,6 +6,7 @@ This module contains utility functions to simplify usage of `CMake`_.
 """
 
 from __future__ import absolute_import, print_function
+import os
 from collections import OrderedDict
 from path import Path
 import six
@@ -63,6 +64,8 @@ CMAKE_BUILD_TYPES = [
 ]
 
 CMAKE_BOOLEAN_VALUE_MAP = {False: "OFF", True: "ON"}
+CPACK_GENERATOR = os.environ.get("CPACK_GENERATOR",
+                  os.environ.get("CMAKE_BUILD_PACK_FORMAT", "ZIP"))
 
 
 # -----------------------------------------------------------------------------
@@ -77,6 +80,65 @@ def map_build_config_to_cmake_build_type(build_config_name):
             cmake_build_type = build_type
             break
     return cmake_build_type
+
+
+class CMakeDefine(object):
+
+    def __init__(self, name=None, value=None, type=None):
+        self.name = name
+        self.value = value
+        self.type = type
+
+    def __str__(self):
+        value = self.value
+        if value is None:
+            value = "ON"
+        elif isinstance(value, bool):
+            value = CMAKE_BOOLEAN_VALUE_MAP[value]
+
+        if self.type:
+            return "{name}:{type}={value}".format(
+                name=self.name, type=self.type, value=value)
+        else:
+            return "{name}={value}".format(name=self.name, value=value)
+
+    def as_tuple(self):
+        if self.type:
+            return (self.name, self.value, self.type)
+        else:
+            return (self.name, self.value)
+
+    def as_option_string(self):
+        return "-D{0}".format(self)
+
+    @classmethod
+    def from_tuple(cls, data):
+        assert 2 <= len(data) <= 3
+        if len(data) >= 3:
+            return cls(data[0], data[1], data[2])
+        else:
+            return cls(data[0], data[1])
+
+    @classmethod
+    def parse(cls, text):
+        text = text.strip()
+        if "=" not in text:
+            raise ValueError("INVALID CMAKE-DEFINE: %s (expected: NAME=VALUE)" % text)
+
+        type = None
+        parts = text.split("=", 1)
+        name = parts[0]
+        if ":" in parts[0]:
+            name, type = parts[0].split(":", 1)
+        if len(parts) >= 2:
+            assert len(parts) == 2
+            value = parts[1]
+        return cls(name=name, value=value, type=type)
+
+    @classmethod
+    def parse_many(cls, text_list):
+        return [cls.parse(text) for text in text_list]
+
 
 
 # -----------------------------------------------------------------------------
@@ -215,7 +277,7 @@ def cmake_cmdline_define_options(defines, toolchain=None, build_type=None,
                 value = CMAKE_BOOLEAN_VALUE_MAP[value]
             item = "-D{0}={1}".format(name, value)
         else:
-            item = "-D{0}".format(name)
+            item = "-D{0}=ON".format(name)
         define_options.append(item)
     return " ".join(define_options)
 

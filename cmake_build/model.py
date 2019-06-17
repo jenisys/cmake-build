@@ -13,29 +13,20 @@ from __future__ import absolute_import, print_function
 # -----------------------------------------------------------------------------
 import os
 import six
-from collections import OrderedDict
 from invoke.util import cd
 from path import Path
-from .cmake_util import \
-    make_build_dir_from_schema, map_build_config_to_cmake_build_type, \
-    cmake_cmdline, cmake_cmdline_define_options
+from cmake_build.config import CMakeProjectPersistConfig, BuildConfig
+from .cmake_util import CMAKE_DEFAULT_GENERATOR, CPACK_GENERATOR, \
+    make_build_dir_from_schema, cmake_cmdline, cmake_cmdline_define_options
 from .exceptions import NiceFailure
-from .persist import PersistentData
 from .pathutil import posixpath_normpath
 
 
 # -----------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------
-CMAKE_CONFIG_DEFAULTS = {
-    "cmake_generator": None,
-    "cmake_toolchain": None,
-    "cmake_build_type": None,
-    "cmake_install_prefix": None,
-    "cmake_defines": [],
-    "cmake_args": [],
-}
 CMAKE_BUILD_VERBOSE = (os.environ.get("CMAKE_BUILD_VERBOSE", None) == "yes")
+CMAKE_PARALLEL_UNSET = -1
 
 
 def make_args_string(args):
@@ -51,246 +42,8 @@ def make_args_string(args):
 
 
 # -----------------------------------------------------------------------------
-# CMAKE UTILITY CLASSES:
+# CMAKE PROJECT CLASSES:
 # -----------------------------------------------------------------------------
-class CMakeProjectData(object):
-
-    def __init__(self, data=None, use_defaults=True, **kwargs):
-        data_defaults = {}
-        if use_defaults:
-            data_defaults = CMAKE_CONFIG_DEFAULTS.copy()
-        self.data = data_defaults
-        self.data.update(data or {})
-        self.data.update(kwargs)
-        self.normalize_data()
-
-    def normalize_data(self):
-        cmake_defines = self.data.get("cmake_defines", None)
-        if cmake_defines is None:
-            cmake_defines = []
-        if not isinstance(cmake_defines, OrderedDict):
-            self.data["cmake_defines"] = OrderedDict(cmake_defines)
-
-    def clear(self):
-        self.data.clear()
-
-    def get(self, name, default=None):
-        return self.data.get(name, default)
-        # value = getattr(self, name, Unknown)
-        # if value is Unknown:
-        #     value = self.data.get(name, default)
-        # return value
-
-    def update(self, data, **kwargs):
-        self.data.update(data, **kwargs)
-        self.normalize_data()
-
-    def copy(self):
-        return self.__class__(data=self.data.copy())
-
-    def assign(self, data):
-        # -- WORKS WITH: this-class or dict-like
-        the_data = data
-        if isinstance(data, self.__class__):
-            the_data = data.data
-        self.data = the_data.copy()
-        self.normalize_data()
-
-    def __len__(self):
-        return len(self.data)
-
-    def __contains__(self, param_name):
-        return param_name in self.data
-
-    def __getitem__(self, param_name):
-        return self.data[param_name]
-
-    def __setitem__(self, param_name, value):
-        self.data[param_name] = value
-
-    def __eq__(self, other):
-        if isinstance(other, dict):
-            return self.data == other
-        return self.data == other.data
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    @property
-    def cmake_generator(self):
-        return self.get("cmake_generator", None)
-
-    @cmake_generator.setter
-    def cmake_generator(self, value):
-        self.data["cmake_generator"] = value
-
-    @property
-    def cmake_toolchain(self):
-        return self.get("cmake_toolchain", None)
-
-    @cmake_toolchain.setter
-    def cmake_toolchain(self, value):
-        self.data["cmake_toolchain"] = value
-
-    @property
-    def cmake_build_type(self):
-        return self.get("cmake_build_type", None)
-
-    @cmake_build_type.setter
-    def cmake_build_type(self, value):
-        self.data["cmake_build_type"] = value
-
-    @property
-    def cmake_install_prefix(self):
-        return self.get("cmake_install_prefix", None)
-
-    @cmake_install_prefix.setter
-    def cmake_install_prefix(self, value):
-        self.data["cmake_install_prefix"] = value
-
-    @property
-    def cmake_defines(self):
-        return self.data["cmake_defines"]
-
-    @cmake_defines.setter
-    def cmake_defines(self, value):
-        if not isinstance(value, OrderedDict):
-            value = OrderedDict(value)
-        self.data["cmake_defines"] = value
-
-    @property
-    def cmake_args(self):
-        return self.get("cmake_args", [])
-
-    @cmake_args.setter
-    def cmake_args(self, value):
-        self.data["cmake_args"] = value or []
-
-    def cmake_defines_add(self, name, value=None):
-        self.cmake_defines.update([(name, value)])
-
-    def cmake_defines_remove(self, name):
-        if name in self.cmake_defines:
-            self.cmake_defines.pop(name)
-
-
-class CMakeProjectPersistentData(CMakeProjectData, PersistentData):
-    """Persistent data class for CMake project (build_dir) data.
-    This data represents one build-configuration of this project.
-    """
-    FILE_BASENAME = ".cmake_build.build_config.json"
-
-    def __init__(self, filename=None, data=None, cmake_generator=None,
-                 cmake_toolchain=None, **kwargs):
-        # -- OPTIONAL OVERRIDE:
-        the_data = data or {}
-        cmake_defines = the_data.get("cmake_defines", [])
-        if cmake_generator:
-            the_data["cmake_generator"] = cmake_generator
-        if cmake_toolchain:
-            the_data["cmake_toolchain"] = cmake_toolchain
-        # -- SETUP/INIT: BASE-CLASSES
-        CMakeProjectData.__init__(self, data=the_data, **kwargs)
-        PersistentData.__init__(self, filename, data=self.data)
-
-    def assign(self, data):
-        # -- WORKS WITH: this-class or dict-like
-        the_data = data
-        if isinstance(data, self.__class__):
-            the_data = data.data
-
-        # -- ENSURE: All parameters exists, at least with default values.
-        # HINT: This is needed if newer cmake-builds stumbles upon older persistent schema.
-        data = {
-            "cmake_build_type": None,
-            "cmake_generator": None,
-            "cmake_toolchain": None,
-            "cmake_install_prefix": None,
-            "cmake_defines": {},
-        }
-        data.update(the_data)
-        self.data = data
-
-    # def make_data(self):
-    #     data = self.data.copy()
-    #     cmake_defines = data.get("cmake_defines", None)
-    #     if cmake_defines is not None:
-    #         data["cmake_defines"] = [
-    #             {name: value} for name, value in cmake_defines.items()
-    #         ]
-    #     return data
-
-    # @classmethod
-    # def load(cls, filename):
-    #     persistent_object = PersistentData.load(filename)
-    #     # persistent_object.normalize_data()
-    #     return persistent_object
-
-
-class BuildConfig(CMakeProjectData):
-    """Represent the configuration data related to a build-configuration.
-
-
-    .. code-block:: YAML
-
-        # -- FILE: cmake_build.config.yaml
-        ...
-        build_configs:
-          - Linux_arm64_Debug:
-              cmake_build_type: Debug
-              cmake_toolchain: cmake/toolchain/linux_gcc_arm64.cmake
-              cmake_defines:
-                - CMAKE_BUILD_TYPE=Debug
-            - cmake_init_args: --warn-uninitialized --check-system-vars
-
-          - Linux_arm64_Release:
-              cmake_build_type: MinSizeRel
-              cmake_toolchain: cmake/toolchain/linux_gcc_arm64.cmake
-              cmake_generator: ninja
-
-    """
-    DEFAULT_NAME = "default"
-    CMAKE_BUILD_TYPE_AUTO_DETECT = True
-
-    def __init__(self, name=None, data=None, **kwargs):
-        CMakeProjectData.__init__(self, data, **kwargs)
-        self.name = name or self.DEFAULT_NAME
-        self._cmake_build_type = self.cmake_build_type
-        self.derive_cmake_build_type_if_unconfigured()
-
-    def derive_cmake_build_type(self):
-        """Derives CMAKE_BUILD_TYPE from build_config.name."""
-        return map_build_config_to_cmake_build_type(self.name)
-
-    def derive_cmake_build_type_and_assign(self, force=False):
-        """Derives CMAKE_BUILD_TYPE and assigns it,
-        if the CMAKE_BUILD_TYPE is not configured yet.
-        """
-        if force or self.CMAKE_BUILD_TYPE_AUTO_DETECT:
-            # -- NOT-CONFIGURED: cmake_build_type
-            # HINT: Derive cmake_build_type from build_config.name
-            self.cmake_build_type = self.derive_cmake_build_type()
-        return self.cmake_build_type
-
-    def derive_cmake_build_type_if_unconfigured(self):
-        """Derives CMAKE_BUILD_TYPE and assigns it,
-        if the CMAKE_BUILD_TYPE is not configured yet.
-        """
-        not_configured = not self._cmake_build_type
-        if not_configured:
-            self.derive_cmake_build_type_and_assign()
-        return self.cmake_build_type
-
-    @property
-    def cmake_build_type(self):
-        return self.data["cmake_build_type"]
-
-    @cmake_build_type.setter
-    def cmake_build_type(self, value):
-        self.data["cmake_build_type"] = value
-        self._cmake_build_type = value
-
-
 class CMakeProject(object):
     """CMake project entity that represents a
     CMake project with one build configuration (one build_dir).
@@ -302,6 +55,30 @@ class CMakeProject(object):
     * Can detect when the cmake-init configuration data changes
       and automatically triggers a cmake-reinit of the build_dir
       (example: another toolchain is used, cmake-init definitions change, ...)
+
+    The attributes are:
+
+    .. attribute:: config
+
+        Current configuration data of this CMake project.
+        It describes the configuration data that should be used.
+        It may differ from :attr:`_build_config` and :attr:`_stored_config`.
+
+        The attr:`config` is stored in :attr:`_stored_config`
+        (and its persistent config-file) if it differs from it.
+
+    .. attribute:: _stored_config
+
+        Stored configuration data of this CMake project (in cmake_project.build_dir).
+        It describes the configuration that was last used to (re-)init/update
+        this CMake project for building it.
+
+    .. attribute:: _build_config
+
+        Build configuration that comes from the "cmake_build.yaml" config-file.
+        It describes the pre-canned, intended configuration of this CMake project
+        (for this build-config).
+
     """
     CMAKE_BUILD_DATA_FILENAME = ".cmake_build.build_config.json"
     CMAKE_BUILD_TYPE_DEFAULT = "Debug"
@@ -319,30 +96,49 @@ class CMakeProject(object):
             build_dir = make_build_dir_from_schema(ctx.config, build_config.name)
             project_build_dir = project_dir/build_dir
 
+        config_name = build_config.name
         cmake_generator_default = build_config.cmake_generator
         cmake_toolchain = build_config.cmake_toolchain
 
         self.ctx = ctx
         self.project_dir = project_dir
         self.project_build_dir = Path(project_build_dir).abspath()
-        self.build_config = build_config
-        self.current_data = None
-        self.stored_data = None
+        self.config = None
+        self._build_config = build_config
+        self._stored_config = None
+        self._stored_cmake_generator = None
         self._dirty = True
-        self.load_cmake_build_data()
-        self.update_from_build_config()
+        self.load_config()
+        self.update_from_initial_config(build_config)
+        self.config.name = config_name
         if not cmake_generator:
             # -- INHERIT: Stored cmake_generator, if it is not overridden.
-            cmake_generator = self.stored_data.cmake_generator or \
+            cmake_generator = self._stored_config.cmake_generator or \
                               cmake_generator_default
-        self.cmake_generator = cmake_generator
-        self.cmake_toolchain = cmake_toolchain
-        self.cmake_install_prefix = self.replace_placeholders(self.cmake_install_prefix)
-        # XXX self.cmake_defines = self.replace_placeholders(self.cmake_defines)
+        self.config.cmake_generator = cmake_generator
+        self.config.cmake_toolchain = cmake_toolchain
+        self.cmake_install_prefix = self.replace_placeholders(
+            self.cmake_install_prefix)
+        # MAYBE:
+        # self.cmake_defines = self.replace_placeholders(self.cmake_defines)
         self._dirty = True
 
     def reset_dirty(self):
         self._dirty = False
+
+    def reset_config(self, cmake_generator=None):
+        """Reset the CMake project configuration."""
+        if not cmake_generator:
+            cmake_generator = self.config.cmake_generator
+
+        self.load_config()
+        self.update_from_initial_config(self._build_config)
+        if cmake_generator:
+            self.config.cmake_generator = cmake_generator
+        if self._stored_cmake_generator and not self._stored_config.cmake_generator:
+            # -- RESTORE: stored_cmake_generator info
+            self._stored_config.cmake_generator = self._stored_cmake_generator
+            self._stored_config.save(self.stored_config_filename)
 
     def exists(self):
         return self.project_dir.isdir()
@@ -350,15 +146,17 @@ class CMakeProject(object):
     def replace_placeholders(self, value):
         if value:
             # -- REPLACE PLACEHOLDERS:
+            # pylint: disable=line-too-long
             if isinstance(value, str):
-                value = value.replace("{BUILD_CONFIG}", self.build_config.name) \
+                value = value.replace("{BUILD_CONFIG}", self.config.name) \
                          .replace("{CMAKE_BUILD_TYPE}",
-                                  self.current_data.cmake_build_type) \
+                                  self.config.cmake_build_type) \
                          .replace("{CMAKE_PROJECT_DIR}", self.project_dir) \
                          .replace("{CMAKE_PROJECT_BUILD_DIR}", self.project_build_dir) \
                          .replace("{CWD}", os.getcwd()) \
                          .replace("{HOME}", os.environ.get("HOME", "__UNKOWN_HOME"))
             elif isinstance(value, dict):
+                # pylint: disable=redefined-argument-from-local
                 data = value
                 for name, value in data.items():
                     value2 = self.replace_placeholders(value)
@@ -369,7 +167,7 @@ class CMakeProject(object):
 
     @property
     def dirty(self):
-        return self._dirty or (self.current_data != self.stored_data)
+        return self._dirty or (self.config != self._stored_config)
         # MAYBE: not self.stored_data.exists()
 
     @dirty.setter
@@ -377,30 +175,12 @@ class CMakeProject(object):
         self._dirty = value
 
     @property
-    def cmake_build_data_filename(self):
+    def stored_config_filename(self):
         return self.project_build_dir/self.CMAKE_BUILD_DATA_FILENAME
 
     @property
-    def cmake_toolchain(self):
-        return self.current_data.cmake_toolchain
-
-    @cmake_toolchain.setter
-    def cmake_toolchain(self, value):
-        self.current_data.cmake_toolchain = value
-        self.dirty = True
-
-    @property
-    def cmake_generator(self):
-        return self.current_data.cmake_generator
-
-    @cmake_generator.setter
-    def cmake_generator(self, value):
-        self.current_data.cmake_generator = value
-        self.dirty = True
-
-    @property
     def cmake_install_prefix(self):
-        return self.current_data.cmake_install_prefix
+        return self.config.cmake_install_prefix
 
     @cmake_install_prefix.setter
     def cmake_install_prefix(self, value):
@@ -409,136 +189,158 @@ class CMakeProject(object):
             value = self.replace_placeholders(value)
 
         # print("XXX cmake_install_prefix= {0}".format(value))
-        self.current_data.cmake_install_prefix = value
+        self.config.cmake_install_prefix = value
         self.dirty = True
 
-    def _on_cmake_build_data_loaded(self, data):
+    def _on_config_loaded(self, data):
         """Can be overridden."""
         pass
 
-    def update_from_build_config(self):
-        """Update attr:`current_data` from the :attr:`build_config` data."""
-        self.current_data.cmake_toolchain = self.build_config.cmake_toolchain
-        self.current_data.cmake_generator = self.build_config.cmake_generator
-        self.current_data.cmake_build_type = self.build_config.cmake_build_type
-        self.current_data.cmake_install_prefix = self.build_config.cmake_install_prefix
-        self.current_data.cmake_defines = self.build_config.cmake_defines
-        self.current_data.cmake_args = self.build_config.cmake_args
+    def update_from_initial_config(self, build_config):
+        """Update :attr:`config` from the :param:`build_config` data."""
+        # XXX-WORKMARK: Update or merge needed here ?!?
+        if not self.config:
+            self.load_config()
+        if False:   # pylint: disable=using-constant-test
+            self.config.cmake_toolchain = build_config.cmake_toolchain
+            self.config.cmake_generator = build_config.cmake_generator
+            self.config.cmake_build_type = build_config.cmake_build_type
+            self.config.cmake_install_prefix = build_config.cmake_install_prefix
+            self.config.cmake_defines.update(build_config.cmake_defines.items())
+            self.config.cmake_args = build_config.cmake_args
+        for name, value in build_config.items():
+            current_value = self.config.get(name)
+            if not current_value and value:
+                self.config[name] = value
+        # XXX print("XXX config: %r" % self.config.data)
+        # XXX print("XXX build_config: %r" % build_config.data)
+        self.config.normalize_data()
+        # print("XXX cmake_project.config= %r" % self.config.data)
 
-    def load_cmake_build_data(self):
-        cmake_build_data_filename = self.cmake_build_data_filename
-        file_exists = cmake_build_data_filename.exists()
-        data = CMakeProjectPersistentData.load(cmake_build_data_filename)
-        self._on_cmake_build_data_loaded(data)
-        self.stored_data = data
-        self.current_data = data.copy()
+    def load_config(self):
+        """Load the CMake project build configuration from the persistent file
+        in the ``cmake_project.project_build_dir``.
+        """
+        stored_config_filename = self.stored_config_filename
+        file_exists = stored_config_filename.exists()
+        try:
+            stored_config = CMakeProjectPersistConfig.load(stored_config_filename)
+        except ValueError:
+            print('OOPS: ParseError in "{0}" (IGNORED)'.format(
+                stored_config_filename.relpath()))
+            stored_config = CMakeProjectPersistConfig()
+
+        self._on_config_loaded(stored_config)
+        self._stored_config = stored_config
+        if stored_config.cmake_generator:
+            self._stored_cmake_generator = self._stored_config.cmake_generator
+        self.config = stored_config.copy()
         self.reset_dirty()
         if not file_exists:
+            # -- ENFORCE: Persistent config-file will be written.
             self.dirty = True
 
-    # def load_cmake_build_data_and_merge(self):
-    #     self.load_cmake_build_data()
-    #     self.current_data.data["cmake_generator"] = self.cmake_generator
-    #     self.current_data.data["cmake_toolchain"] = self.cmake_toolchain
-    #     self.dirty = self.current_data != self.stored_data
-
-    def store_cmake_build_data(self):
-        cmake_build_data_filename = self.cmake_build_data_filename
-        self.current_data["cmake_generator"] = self.cmake_generator
-        store_always = False
-        if (not cmake_build_data_filename.exists() or store_always
-                or (self.current_data != self.stored_data)):
-            # -- STORE DATA (persistently):
-            self.current_data.save(self.cmake_build_data_filename)
-            self.stored_data = self.current_data.copy()
+    def store_config(self):
+        """Store the current CMake project configuration to the persistent file
+        in the ``cmake_project.project_build_dir``.
+        """
+        stored_config_filename = self.stored_config_filename
+        if (not stored_config_filename.exists() or
+                self.config != self._stored_config):
+            # -- STORE CONFIG-DATA (persistently):
+            self.config.save(self.stored_config_filename)
+            self._stored_config = self.config.copy()
         self.dirty = False
 
     def make_cmake_init_options(self, cmake_generator=None):
-        cmake_toolchain = self.current_data.cmake_toolchain
-        cmake_generator = self.current_data.cmake_generator
+        if cmake_generator is None:
+            cmake_generator = self.config.cmake_generator
+        cmake_toolchain = self.config.cmake_toolchain
         cmake_install_prefix = self.replace_placeholders(
-            self.build_config.cmake_install_prefix)
-        cmake_defines = self.replace_placeholders(self.build_config.cmake_defines)
-        cmdline = cmake_cmdline(args=self.build_config.cmake_args,
+            self.config.cmake_install_prefix)
+        cmake_defines = self.replace_placeholders(self.config.cmake_defines)
+        cmdline = cmake_cmdline(args=self.config.cmake_init_args,
                                 defines=cmake_defines,
                                 generator=cmake_generator,
                                 toolchain=cmake_toolchain,
-                                build_type=self.build_config.cmake_build_type,
+                                build_type=self.config.cmake_build_type,
                                 install_prefix=cmake_install_prefix)
         return cmdline
 
     def make_cmake_update_options(self, **more_defines):
-        cmake_toolchain = self.current_data.cmake_toolchain
+        # pylint: disable=line-too-long
+        cmake_toolchain = self.config.cmake_toolchain
         cmake_install_prefix = self.replace_placeholders(
-            self.build_config.cmake_install_prefix)
-        cmake_defines = self.replace_placeholders(self.build_config.cmake_defines)
-        # print("XXX cmake_defines: %r" % self.build_config.cmake_defines)
+            self.config.cmake_install_prefix)
+        cmake_defines = self.replace_placeholders(self.config.cmake_defines)
+        # print("XXX cmake_defines: %r" % self.config.cmake_defines)
         cmdline = cmake_cmdline_define_options(defines=cmake_defines,
                                                toolchain=cmake_toolchain,
-                                               build_type=self.build_config.cmake_build_type,
+                                               build_type=self.config.cmake_build_type,
                                                install_prefix=cmake_install_prefix,
                                                **more_defines)
         return cmdline
 
-    def has_cmake_build_data_file(self):
-        return self.cmake_build_data_filename.exists()
+    def has_stored_config_file(self):
+        return self.stored_config_filename.exists()
 
     @property
     def initialized(self):
-        verbose = CMAKE_BUILD_VERBOSE
-        if verbose:
-            print("initialized.project_build_dir:     {0} (exists: {1})".format(
-                self.project_build_dir.relpath(),
-                self.project_build_dir.exists()
-            ))
-            print("initialized.cmake_build_data_file: {0} (exists: {1})".format(
-                self.cmake_build_data_filename.relpath(),
-                self.has_cmake_build_data_file()
-            ))
-        return self.project_build_dir.exists() and self.has_cmake_build_data_file()
+        """Indicates if CMake project is initialized.
+        This means:
+        * CMake project build_dir exists
+        * store_config file exists in CMake project build_dir
+        """
+        # verbose = CMAKE_BUILD_VERBOSE
+        # if verbose:
+        #     print("initialized.project_build_dir:     {0} (exists: {1})".format(
+        #         self.project_build_dir.relpath(),
+        #         self.project_build_dir.exists()
+        #     ))
+        #     print("initialized.cmake_build_data_file: {0} (exists: {1})".format(
+        #         self.stored_config_filename.relpath(),
+        #         self.has_stored_config_file()
+        #     ))
+        return self.project_build_dir.exists() and self.has_stored_config_file()
 
     def needs_reinit(self):
-        # OLD: return ((self.current_data != self.stored_data) or
-        #               not self.cmake_build_data_filename.exists())
-        current_cmake_generator = self.current_data.get("cmake_generator")
-        stored_cmake_generator = self.stored_data.get("cmake_generator")
+        """Indicates if the cmake_project.build_dir should be recreated.
+        This is required (or better) when the cmake.generator changes.
+        """
+        current_cmake_generator = self.config.get("cmake_generator")
+        stored_cmake_generator = self._stored_config.get("cmake_generator")
         return ((current_cmake_generator != stored_cmake_generator) or
-                not self.cmake_build_data_filename.exists())
-                # -- MAYBE: or self.dirty
+                not self.has_stored_config_file())
 
     def needs_update(self):
         """Indicates if CMake project build_dir needs to be updated."""
-        names = [
-            "cmake_toolchain", "cmake_build_type", "cmake_install_prefix", "cmake_defines"
-        ]
-        for name in names:
-            stored_param = self.stored_data.get(name)
-            current_param = self.current_data.get(name)
-            if current_param != stored_param:
-                return True
-        # -- OTHERWISE:
-        return False
+        return not self.config.same_as(self._stored_config,
+                                       excluded=["cmake_generator"])
 
     def ensure_init(self, args=None, cmake_generator=None):  # @simplify
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
-        needs_update = self.needs_update()
-        needs_reinit = self.needs_reinit()
-        if self.initialized and not (needs_reinit or needs_update):
-            # -- CASE: ALREADY DONE w/ same cmake_generator.
-            # pylint: disable=line-too-long
-            print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})." \
-                  .format(project_build_dir, self.cmake_generator))
-            return False
-        elif self.initialized and needs_update and not needs_reinit:
-            print("CMAKE-INIT:  {0} (NEEDS-UPDATE)".format(project_build_dir))
-            self.update()
-            return True
+        if self.initialized:
+            # -- CASE: cmake_project.build_dir exists and stored_config file exists
+            needs_update = self.needs_update()
+            needs_reinit = self.needs_reinit()
+            if not (needs_reinit or needs_update):
+                # -- CASE: ALREADY DONE w/ same cmake_generator.
+                # pylint: disable=line-too-long
+                print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})." \
+                      .format(project_build_dir, self.config.cmake_generator))
+                return False
+            elif needs_update and not needs_reinit:
+                print("CMAKE-INIT:  {0} (NEEDS-UPDATE, using cmake.generator={1})"\
+                      .format(project_build_dir, self.config.cmake_generator))
+                self.update()
+                return True
 
+        # -- CASE: NOT INITIALIZED or NEEDS REINIT
         if self.project_build_dir.isdir():
             print("CMAKE-INIT:  {0} (NEEDS-REINIT)".format(project_build_dir))
             self.cleanup()
 
-        cmake_generator = cmake_generator or self.cmake_generator
+        cmake_generator = cmake_generator or self.config.cmake_generator
         ctx = self.ctx
         self.project_build_dir.makedirs_p()
         cmake_init_options = self.make_cmake_init_options(cmake_generator)
@@ -547,8 +349,6 @@ class CMakeProject(object):
             print("CMAKE-INIT:  {0} (using cmake.generator={1})".format(
                 project_build_dir, cmake_generator))
 
-            # DISABLED: toolchain, used too late w/ wrong abspath.
-            # cmake_init_options = self.make_cmake_init_options(cmake_generator)
             if args:
                 cmake_init_options += " {0}".format(make_args_string(args))
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
@@ -558,21 +358,35 @@ class CMakeProject(object):
             print()
 
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
-            self.cmake_generator = cmake_generator
-            self.store_cmake_build_data()
+            self.config.cmake_generator = cmake_generator
+            self.store_config()
+            self._stored_cmake_generator = cmake_generator
         return True
 
     # -- PROJECT-COMMAND API:
     def cleanup(self):
+        """Remove cmake_project.project_build_dir"""
+        verbose = False
         if self.project_build_dir.isdir():
             project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
-            "CMAKE-CLEANUP: {0}".format(project_build_dir)
+            if verbose:
+                print("CMAKE-CLEANUP: {0}".format(project_build_dir))
             self.project_build_dir.rmtree_p()
+            self._stored_cmake_generator = None
+
+    def remove_stored_config(self):
+        """Remove the persistent data-file for the stored_config (if exists)."""
+        stored_config_filename = self.stored_config_filename
+        if stored_config_filename.exists():
+            stored_config_filename.remove()
+            self._stored_cmake_generator = self._stored_config.cmake_generator
 
     def init(self, args=None, cmake_generator=None):
         """Perform CMake init of the project build directory for this
         build_config.
         """
+        if not args:
+            args = self.config.cmake_init_args
         return self.ensure_init(args=args, cmake_generator=cmake_generator)
 
     # -- PRELIMINARY PROTOTYPE:
@@ -580,8 +394,12 @@ class CMakeProject(object):
         """Update CMake project build directory configuration"""
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if not self.initialized:
-            print("CMAKE-UPDATE: {0} (SKIPPED: Not initialized yet)".format(project_build_dir))
+            print("CMAKE-UPDATE: {0} (SKIPPED: Not initialized yet)".format(
+                project_build_dir))
             return
+
+        for name, value in data.items():
+            self.config.cmake_defines[name] = value
 
         # cmake_generator = data.pop("cmake_generator", None)
         # self.ensure_init(cmake_generator=cmake_generator)
@@ -589,7 +407,8 @@ class CMakeProject(object):
 
         # more_cmake_defines = OrderedDict(data.items())
         # cmake_options = cmake_cmdline_define_options([], **data)
-        # print("XXX cmake_defines: %r" % self.build_config.cmake_defines)
+        # print("XXX cmake_defines: %r" % self.config.cmake_defines)
+        # pylint: disable=line-too-long
         cmake_options = self.make_cmake_update_options(**data)
         with cd(self.project_build_dir):
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
@@ -597,22 +416,65 @@ class CMakeProject(object):
             self.ctx.run("cmake {0} {1}".format(cmake_options, relpath_to_project_dir))
 
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
-            self.store_cmake_build_data()
+            self.store_config()
 
-    def build(self, args=None, init_args=None, cmake_generator=None,
-              ensure_init=True):
-        """Triggers the cmake.build step (and delegate to used build-system)."""
+    def build(self, args=None, options=None, init_args=None,
+              cmake_generator=None, ensure_init=True,
+              target=None, parallel=CMAKE_PARALLEL_UNSET,
+              clean_first=False, verbose=False):
+        """Triggers the cmake.build step (and delegate to used build-system).
+
+        :param args:    List of CMake build args to use (passed to build system).
+        :param options: List of CMake build options to use.
+        :param init_args: List of CMake init args passed to init command.
+        :param cmake_generator: Name of cmake.generator to use.
+        :param ensure_init:  Indicates if initialized state should be checked.
+        :param target:  Name of other target for build command (optional).
+        :param parallel: Number of parallel build jobs to use (optional).
+        :param clean_first: Indicates if build uses --clean-first option.
+        :param verbose: Use verbose build mode or not (optional).
+        """
+        needs_store_config = False
         cmake_build_args = ""
+        cmake_build_options = ""
+        options = options or []
+        assert isinstance(options, list)
+        if target:
+            options.append("--target {0}".format(target))
+
+        if parallel == CMAKE_PARALLEL_UNSET or parallel < 0:
+            # -- INHERIT: From last run.
+            parallel = self.config.cmake_parallel
+        if parallel >= 0:
+            self.config.cmake_parallel = parallel  # -- REMEMBER: Last value.
+            needs_store_config = True
+            if parallel == 0:
+                options.append("--parallel")
+            elif  parallel >= 2:
+                options.append("--parallel {0}".format(parallel))
+
+        if clean_first:
+            options.append("--clean-first")
+        if verbose:
+            options.append("--verbose")
+
+        if options:
+            cmake_build_options = " ".join(options or [])
         if args:
             cmake_build_args = "-- {0}".format(make_args_string(args))
 
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if ensure_init:
             self.ensure_init(args=init_args, cmake_generator=cmake_generator)
+        if needs_store_config:
+            # -- ENSURE: Initial stored_config is kept after INIT-STEP.
+            self.store_config()
+
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
             print("CMAKE-BUILD: {0}".format(project_build_dir))
-            self.ctx.run("cmake --build . {0}".format(cmake_build_args).strip())
+            self.ctx.run("cmake --build . {0} {1}".format(
+                cmake_build_options, cmake_build_args).strip())
             print()
 
     def install(self, prefix=None, cmake_generator=None, use_sudo=False):
@@ -634,7 +496,7 @@ class CMakeProject(object):
                     prefix, posixpath_normpath(self.project_dir.relpath()))
                 self.ctx.run(cmake_update_command)
                 self.cmake_install_prefix = prefix
-                # DISABLED: self.store_cmake_build_data()
+                # DISABLED: self.store_config()
 
             # print("CMAKE-INSTALL: {0} (using: CMAKE_INSTALL_PREFIX={1})".format(
             #    project_build_dir, self.cmake_install_prefix))
@@ -645,6 +507,39 @@ class CMakeProject(object):
             else:
                 self.ctx.run(cmake_install_command)
             print()
+
+    def pack(self, format=None, package_dir=None, vendor=None, verbose=False):
+        """Run cpack command to package:
+
+         * source-code archives
+         * binary archives
+         * packages (for package managers)
+         * installers, installation packages
+
+         :param format: CPack generator format, like: ZIP, TGZ, ... (CPACK_GENERATOR).
+         :param package_dir: Override package directory (CPACK_PACKAGE_DIRECTORY).
+         :param vendor: Override package vendor name (CPACK_PACKAGE_VENDOR).
+         :param verbose: Enable cpack verbose mode (optional, default=off).
+         """
+        format = format or CPACK_GENERATOR
+        options = []
+        if package_dir:
+            # -- OVERRIDE: CPACK_PACKAGE_DIRECTORY
+            options.append("-B {0}".format(package_dir))
+        if vendor:
+            # -- OVERRIDE: CPACK_PACKAGE_VENDOR
+            options.append("--vendor '{0}'".format(vendor))
+        if verbose:
+            options.append("--verbose")
+        cpack_options = " ".join(options)
+
+        self.ensure_init()
+        project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
+        with cd(self.project_build_dir):
+            print("CMAKE-PACK: {0} (using cpack.generator={1})".format(
+                project_build_dir, format))
+            self.ctx.run("cpack -G {0} {1} --config CPackConfig.cmake".format(
+                format, cpack_options))
 
 
     def clean(self, args=None, init_args=None):
@@ -667,18 +562,22 @@ class CMakeProject(object):
 
     def reinit(self, args=None):
         self.cleanup()
+        self.reset_config()
         self.init(args=args)
 
-    def rebuild(self, args=None, init_args=None):
-        if self.REBUILD_USE_DEEP_CLEANUP:
+    def rebuild(self, args=None, options=None, init_args=None,
+                parallel=CMAKE_PARALLEL_UNSET, **kwargs):
+        cleanup_build_dir = kwargs.pop("cleanup", False)
+        if cleanup_build_dir or self.REBUILD_USE_DEEP_CLEANUP:
             self.cleanup()
 
         self.clean(init_args=init_args)
-        self.build(args=args, ensure_init=True)
+        self.build(args=args, options=options, ensure_init=True,
+                   parallel=parallel)
 
-    def redo(self, args=None, init_args=None):
+    def redo(self, args=None, options=None, init_args=None, **kwargs):
         self.reinit(args=init_args)
-        self.rebuild(args=args)
+        self.rebuild(args=args, options=options, **kwargs)
 
     def ctest(self, args=None, init_args=None, verbose=False):
         """Run ctest on CMake project.
@@ -726,6 +625,7 @@ class CMakeProjectWithSyndrome(object):
     def __init__(self, project_dir=None, syndrome=None):
         self.project_dir = Path(project_dir or ".").abspath()
         self.syndrome = syndrome or self.SYNDROME
+        self.config = CMakeProjectPersistConfig()
 
     def relpath_to_project_dir(self, start="."):
         return posixpath_normpath(self.project_dir.relpath(start))
@@ -734,25 +634,26 @@ class CMakeProjectWithSyndrome(object):
         raise NiceFailure(reason=reason,
                           template=self.FAILURE_TEMPLATE)
 
-    def warn(self, reason):
+    @staticmethod
+    def warn(reason):
         print(reason)
 
     # -- PROJECT-COMMAND API:
     def cleanup(self):
         self.warn("CMAKE-CLEANUP: {0} (SKIPPED: {1})".format(
-                  self.relpath_to_project_dir(), self.syndrome))
+            self.relpath_to_project_dir(), self.syndrome))
 
     def init(self, **kwargs):
         self.fail("CMAKE-INIT: {0} (SKIPPED: {1})".format(
-                  self.relpath_to_project_dir(), self.syndrome))
+            self.relpath_to_project_dir(), self.syndrome))
 
     def build(self, **kwargs):
         self.fail("CMAKE-BUILD: {0} (SKIPPED: {1})".format(
-                    self.relpath_to_project_dir(), self.syndrome))
+            self.relpath_to_project_dir(), self.syndrome))
 
     def clean(self, **kwargs):
         self.warn("CMAKE-CLEAN: {0} (SKIPPED: {1})".format(
-                  self.relpath_to_project_dir(), self.syndrome))
+            self.relpath_to_project_dir(), self.syndrome))
 
     def reinit(self, args=None):
         self.cleanup()
@@ -767,8 +668,9 @@ class CMakeProjectWithSyndrome(object):
         self.rebuild(args=args)
 
     def ctest(self, args=None, init_args=None):
+        # pylint: disable=unused-argument
         self.fail("CMAKE-TEST: {0} (SKIPPED: {1})".format(
-                  self.relpath_to_project_dir(), self.syndrome))
+            self.relpath_to_project_dir(), self.syndrome))
 
     def test(self, args=None, init_args=None):
         self.ctest(args=args, init_args=init_args)
@@ -800,6 +702,8 @@ class CMakeBuildRunner(object):
                 if args or init_args or kwargs:
                     if target == "init":
                         project_target_func(args=args, **kwargs)
+                    elif target in ("install", "pack"):
+                        project_target_func(**kwargs)
                     else:
                         project_target_func(args=args, init_args=init_args, **kwargs)
                 else:
@@ -814,8 +718,11 @@ class CMakeBuildRunner(object):
 
     def set_cmake_generator(self, cmake_generator=None):
         # -- OVERRIDE: cmake_generator
+        if cmake_generator is None:
+            cmake_generator = CMAKE_DEFAULT_GENERATOR
+
         for cmake_project in self.cmake_projects:
-            cmake_project.cmake_generator = cmake_generator
+            cmake_project.config.cmake_generator = cmake_generator
 
     def run(self, target=None):
         self.execute_target(target)
@@ -829,8 +736,16 @@ class CMakeBuildRunner(object):
     def test(self, args=None, init_args=None):
         self.execute_target("test", args=args, init_args=init_args)
 
+    def install(self, prefix=None, use_sudo=False):
+        self.execute_target("install", prefix=prefix, use_sudo=use_sudo)
+
+    def pack(self, format=None, package_dir=None, vendor=None, verbose=False):
+        self.execute_target("pack", format=format, package_dir=package_dir,
+                            vendor=vendor, verbose=verbose)
+
     def reinit(self, args=None):
         self.execute_target("cleanup")
+        self.execute_target("reset_config")
         self.execute_target("init", args=args)
 
     def rebuild(self, args=None, init_args=None):
