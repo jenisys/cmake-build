@@ -3,6 +3,7 @@
 # ===========================================================================
 
 cmake_minimum_required(VERSION 3.12)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/toolchain.optional/ccache.cmake")
 project(libhello VERSION 0.1.0 LANGUAGES CXX)
 
 set(_TOPDIR "${PROJECT_SOURCE_DIR}/..")
@@ -68,6 +69,16 @@ set_tests_properties(test_hello_Responder_with_many_args PROPERTIES
 # make install
 install(TARGETS hello DESTINATION lib)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/hello
-        DESTINATION include/hello
+        DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
 # install(FILES src/test.h DESTINATION include)
+
+# ---------------------------------------------------------------------------
+# SUPPORT: cpack
+# ---------------------------------------------------------------------------
+# -- HINT: Simplify testing (avoid: ${CMAKE_SYSTEM_NAME} in package name)
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}_binary")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}_source")
+include(CPack)

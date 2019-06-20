@@ -508,7 +508,8 @@ class CMakeProject(object):
                 self.ctx.run(cmake_install_command)
             print()
 
-    def pack(self, format=None, package_dir=None, vendor=None, verbose=False):
+    def pack(self, format=None, package_dir=None, config=None,
+             source_bundle=False, vendor=None, verbose=False):
         """Run cpack command to package:
 
          * source-code archives
@@ -518,6 +519,7 @@ class CMakeProject(object):
 
          :param format: CPack generator format, like: ZIP, TGZ, ... (CPACK_GENERATOR).
          :param package_dir: Override package directory (CPACK_PACKAGE_DIRECTORY).
+         :param source_bundle: Create source-bundle (if true).
          :param vendor: Override package vendor name (CPACK_PACKAGE_VENDOR).
          :param verbose: Enable cpack verbose mode (optional, default=off).
          """
@@ -525,6 +527,11 @@ class CMakeProject(object):
         options = []
         if package_dir:
             # -- OVERRIDE: CPACK_PACKAGE_DIRECTORY
+            # Issue #19412 <https://gitlab.kitware.com/cmake/cmake/issues/19412>
+            # package_dir must be an absolute-path
+            package_dir = Path(package_dir)
+            if not package_dir.isabs():
+                package_dir = Path(self.project_build_dir / package_dir).abspath()
             options.append("-B {0}".format(package_dir))
         if vendor:
             # -- OVERRIDE: CPACK_PACKAGE_VENDOR
@@ -532,14 +539,20 @@ class CMakeProject(object):
         if verbose:
             options.append("--verbose")
         cpack_options = " ".join(options)
+        cpack_config_file = "CPackConfig.cmake"
+        if config:
+            cpack_config_file = config
+        elif source_bundle:
+            # -- CASE: SOURCE-BUNDLE
+            cpack_config_file = "CPackSourceConfig.cmake"
 
         self.ensure_init()
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         with cd(self.project_build_dir):
             print("CMAKE-PACK: {0} (using cpack.generator={1})".format(
                 project_build_dir, format))
-            self.ctx.run("cpack -G {0} {1} --config CPackConfig.cmake".format(
-                format, cpack_options))
+            self.ctx.run("cpack -G {0} --config {1} {2}".format(
+                format, cpack_config_file, cpack_options).strip())
 
 
     def clean(self, args=None, init_args=None):

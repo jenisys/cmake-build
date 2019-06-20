@@ -3,6 +3,7 @@
 # ===========================================================================
 
 cmake_minimum_required(VERSION 3.12)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/toolchain.optional/ccache.cmake")
 project(hello VERSION 0.1.0 LANGUAGES CXX)
 
 set(_TOPDIR "${PROJECT_SOURCE_DIR}/..")
@@ -36,3 +37,8 @@ add_custom_target(run-hello ALL
 install(TARGETS hello_app DESTINATION bin)
 # ALREADY: install(TARGETS hello1_lib DESTINATION lib)
 # install(FILES test.h DESTINATION include)
+
+# ---------------------------------------------------------------------------
+# SUPPORT: cpack
+# ---------------------------------------------------------------------------
+include(CPack)

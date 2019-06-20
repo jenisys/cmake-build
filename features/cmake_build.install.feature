@@ -49,8 +49,8 @@ Feature: cmake-build install Command
       """
       -- Install configuration: "Debug"
       -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug/lib/libhello.a
-      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug/include/hello/hello
-      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug/include/hello/hello/Responder.hpp
+      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug/include/hello
+      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug/include/hello/Responder.hpp
       """
     And the directory "build.debug/LOCAL.debug" should exist
 
@@ -69,8 +69,8 @@ Feature: cmake-build install Command
     And the command output should contain:
       """
       -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug_2/lib/libhello.a
-      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug_2/include/hello/hello
-      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug_2/include/hello/hello/Responder.hpp
+      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug_2/include/hello
+      -- Installing: {__WORKDIR__}/build.debug/LOCAL.debug_2/include/hello/Responder.hpp
       """
     And the directory "build.debug/LOCAL.debug_2" should exist
 
@@ -95,8 +95,8 @@ Feature: cmake-build install Command
       """
       -- Install configuration: "Debug"
       -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_1.debug/lib/libhello.a
-      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_1.debug/include/hello/hello
-      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_1.debug/include/hello/hello/Responder.hpp
+      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_1.debug/include/hello
+      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_1.debug/include/hello/Responder.hpp
       """
     And the directory "build.debug/CONFIGFILE_1.debug" should exist
 
@@ -121,8 +121,8 @@ Feature: cmake-build install Command
     And the command output should contain:
       """
       -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_2.debug/lib/libhello.a
-      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_2.debug/include/hello/hello
-      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_2.debug/include/hello/hello/Responder.hpp
+      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_2.debug/include/hello
+      -- Installing: {__WORKDIR__}/build.debug/CONFIGFILE_2.debug/include/hello/Responder.hpp
       """
     And the directory "build.debug/CONFIGFILE_2.debug" should exist
     But note that "BUILD_CONFIG specific parameter overrides the generic param"
@@ -151,8 +151,8 @@ Feature: cmake-build install Command
       """
       -- Install configuration: "Debug"
       -- Installing: {__WORKDIR__}/build.debug/CMDLINE.debug/lib/libhello.a
-      -- Installing: {__WORKDIR__}/build.debug/CMDLINE.debug/include/hello/hello
-      -- Installing: {__WORKDIR__}/build.debug/CMDLINE.debug/include/hello/hello/Responder.hpp
+      -- Installing: {__WORKDIR__}/build.debug/CMDLINE.debug/include/hello
+      -- Installing: {__WORKDIR__}/build.debug/CMDLINE.debug/include/hello/Responder.hpp
       """
     And the directory "build.debug/CMDLINE.debug" should exist
     But note that "command-line parameter overrides the preconfigured configfile params"
@@ -173,8 +173,8 @@ Feature: cmake-build install Command
     And the command output should contain:
       """
       -- Installing: {__WORKDIR__}/build.<BUILD_CONFIG>/PLACEHOLDER.<value>/lib/libhello.a
-      -- Installing: {__WORKDIR__}/build.<BUILD_CONFIG>/PLACEHOLDER.<value>/include/hello/hello
-      -- Installing: {__WORKDIR__}/build.<BUILD_CONFIG>/PLACEHOLDER.<value>/include/hello/hello/Responder.hpp
+      -- Installing: {__WORKDIR__}/build.<BUILD_CONFIG>/PLACEHOLDER.<value>/include/hello
+      -- Installing: {__WORKDIR__}/build.<BUILD_CONFIG>/PLACEHOLDER.<value>/include/hello/Responder.hpp
       """
     And the directory "build.<BUILD_CONFIG>/PLACEHOLDER.<value>" should exist
 

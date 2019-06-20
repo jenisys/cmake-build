@@ -6,6 +6,7 @@ from behave4cmake_build.cmake_build_util import make_cmake_project
 from behave4cmd0.command_util import ensure_workdir_exists
 from path import Path
 
+
 @step(u'I copy the directory "{source_dir}" to the working directory "{dest_dir}"')
 def step_copytree_to_workdir_with_destdir(ctx, source_dir, dest_dir):
     ensure_workdir_exists(ctx)
@@ -50,3 +51,17 @@ def step_given_i_copy_cmake_project_to_workdir(ctx, cmake_project_dir):
     # # -- DIAGNOSTICS:
     # print("PROJECT_DIR: %s" % project_dir)
     # print("WORKPATH_PROJECT_DIR: %s" % workpath_project_dir)
+
+
+@given(u'I use CMake project "{project_dir}" to setup a new working directory')
+def step_setup_working_directory_with_cmake_project(ctx, project_dir):
+    new_project_dir = Path(project_dir).normpath().basename()
+    ctx.execute_steps(u"""
+        Given a new working directory
+        And I copy the directory "examples/cmake/" to the working directory
+        And I copy the CMake project "{project_dir}" to the working directory
+        And I use the directory "{new_project_dir}" as working directory
+        And I use the CMake project "."
+        """.format(project_dir=project_dir, new_project_dir=new_project_dir)
+    )
+

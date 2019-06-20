@@ -65,31 +65,24 @@ from .cmake_util import CPACK_GENERATOR
 # -----------------------------------------------------------------------------
 # TASKS:
 # -----------------------------------------------------------------------------
-TASK_ARGS_HELP_MAP = {
-    "project": 'Project directory or "all" (for all projects) (as path)',
-    "build-config": "Build configuration to use: debug, release, ... (as string)",
-    "generator": "cmake.generator to use: ninja, make, ... (as string)",
-    "args": "Arguments to pass (as string)",
-}
-TASK_ARGS_HELP_MAP_WITH_INIT_ARGS = {
-    "init-args": "CMake args to use to initialize the build_dir."
-}
-TASK_ARGS_HELP_MAP_WITH_INIT_ARGS.update(TASK_ARGS_HELP_MAP)
-TASK_ARGS_HELP_MAP_WITH_TEST_ARGS = {
-    "verbose": "Use verbose mode to run tests."
-}
-TASK_ARGS_HELP_MAP_WITH_TEST_ARGS.update(TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
+TASK_HELP4PARAM_PROJECT = "CMake project directory (as path)"
+TASK_HELP4PARAM_BUILD_CONFIG = "Build config to use: debug, release, ... (as string)"
+TASK_HELP4PARAM_GENERATOR = "cmake.generator to use: ninja, make, ... (as string)"
+TASK_HELP4PARAM_DEFINE = "CMake define to use: NAME=VALUE (many)"
+TASK_HELP4PARAM_INIT_ARG = "CMake init arg to use (many)"
+TASK_HELP4PARAM_ARG = "CMake build arg to use (many)"
 
 
 @task(iterable=["define", "arg"], help={
-    "define": "CMake define to use: NAME=VALUE (many)",
-    "arg": "CMake argument to use (many)",
-    "project": 'CMake project directory or "all" (projects) (as path)',
-    "build-config": "Build configuration to use: debug, release, ... (as string)",
-    "generator": "cmake.generator to use: ninja, make, ... (as string)",
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+    "arg": TASK_HELP4PARAM_INIT_ARG,
+    "define": TASK_HELP4PARAM_DEFINE,
     "clean-config": "Remove stored_config before init (optional)",
 })
-def init(ctx, define, arg, project="all", build_config=None, generator=None,
+def init(ctx, project="all", build_config=None, generator=None,
+         arg=None, define=None,
          clean_config=False):
     """Initialize cmake project(s) (generate: build-scripts).
 
@@ -97,8 +90,8 @@ def init(ctx, define, arg, project="all", build_config=None, generator=None,
      * cmake_project build_dir exists (is created if necessary)
      * cmake_project build-scripts are generated/updated with existing config.
     """
-    cmake_defines = define
-    cmake_args = arg
+    cmake_defines = define or []
+    cmake_init_args = arg or []
     cmake_projects = make_cmake_projects(ctx, project,
                                          build_config=build_config,
                                          generator=generator)
@@ -111,13 +104,25 @@ def init(ctx, define, arg, project="all", build_config=None, generator=None,
 
         if cmake_defines:
             cmake_project.config.add_cmake_defines(cmake_defines)
-        cmake_project.init(args=cmake_args)
+        cmake_project.init(args=cmake_init_args)
 
 
-@task(iterable=["arg", "opt", "init_arg", "define"],
-      help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
-def build(ctx, arg=None, opt=None, init_arg=None, define=None,
+@task(iterable=["arg", "opt", "init_arg", "define"], help={
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+    "arg": TASK_HELP4PARAM_ARG,
+    "opt": "CMake build option to use (many)",
+    "init-arg": TASK_HELP4PARAM_INIT_ARG,
+    "define": TASK_HELP4PARAM_DEFINE,
+    "target": "CMake build target to use (optional)",
+    "parallel": "CMAKE_PARALLEL value (as int)",
+    "clean-first": "Use clean-first before build (optional)",
+    "verbose": "Use CMake build verbose mode (optional)",
+})
+def build(ctx,
           project="all", build_config=None, generator=None,
+          arg=None, opt=None, init_arg=None, define=None,
           target=None, parallel=-1, clean_first=False, verbose=False):
     """Build cmake project(s)."""
     # -- HINT: Invoke default tasks needs default values for iterable params.
@@ -140,28 +145,39 @@ def build(ctx, arg=None, opt=None, init_arg=None, define=None,
                             verbose=verbose)
 
 
-@task(aliases=["ctest"],
-      help=TASK_ARGS_HELP_MAP_WITH_TEST_ARGS)
+@task(aliases=["ctest"], iterable=["arg", "init_arg"], help={
+    "arg": "CMake test arg (optional, many)",
+    "init-arg": TASK_HELP4PARAM_INIT_ARG,
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+    "verbose": "Use verbose mode (optional)",
+})
 def test(ctx, project="all", build_config=None, generator=None,
-         args=None, init_args=None, verbose=False):
+         arg=None, init_arg=None, verbose=False):
     """Test cmake projects (performs: ctest)."""
+    cmake_test_args = arg or []
+    cmake_init_args = init_arg or []
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.test(args=args, init_args=init_args, verbose=verbose)
+        cmake_project.test(args=cmake_test_args,
+                           init_args=cmake_init_args,
+                           verbose=verbose)
 
 
-INSTALL_TASK_ARGS_HELP = TASK_ARGS_HELP_MAP_WITH_INIT_ARGS
-INSTALL_TASK_ARGS_HELP.update({
+@task(help={
     "prefix": "CMAKE_INSTALL_PREFIX to use (or use preconfigured)",
-    "use_sudo": "Use sudo for install command"
+    "use_sudo": "Use sudo for install command",
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
 })
-
-
-@task(help=INSTALL_TASK_ARGS_HELP)
-def install(ctx, project="all", prefix=None, build_config=None, generator=None, use_sudo=False):
+def install(ctx, project="all", build_config=None, generator=None,
+            prefix=None, use_sudo=False):
     """Install the build artifacts of cmake project(s)."""
-    cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
+    cmake_projects = make_cmake_projects(ctx, project,
+                                         build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
         cmake_project.install(prefix=prefix, use_sudo=use_sudo)
@@ -169,18 +185,22 @@ def install(ctx, project="all", prefix=None, build_config=None, generator=None, 
 
 @task(help={
     "format":       "cpack.generator to use: TGZ, ZIP, ... (CPACK_GENERATOR)",
-    "project":      "CMake project dir to use (or: all)",
-    "build-config": "Build-config to use, like: debug, release, ...",
-    "generator":    "cmake.generator to use: ninja, make, ...",
+    "project":      TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator":    TASK_HELP4PARAM_GENERATOR,
     "package-dir":  "Override: CPACK_PACKAGE_DIRECTORY (optional)",
+    "config":       "CPack config-file to use (default: CPackConfig.cmake)",
+    "source":       "Create a source package (instead of: binary package)",
     "vendor":       "Override: CPACK_PACKAGE_VENDOR (optional)",
     "verbose":      "Run cpack in verbose mode (optional)",
     # -- OPTIONAL: Check if needed.
     "target": "CMake build target before cpack is used (optional)",
 })
 def pack(ctx, format=None, project="all", build_config=None, generator=None,
-         target=None, package_dir=None, vendor=None, verbose=False):
+         target=None, package_dir=None, config=None,
+         source=False, vendor=None, verbose=False):
     """Pack a source-code archive or a binary bundle/archive for cmake project(s)."""
+    # MAYBE: cpack_defines
     if not format:
         format = CPACK_GENERATOR
 
@@ -190,16 +210,17 @@ def pack(ctx, format=None, project="all", build_config=None, generator=None,
         if target:
             cmake_project.build(target=target)
         cmake_project.pack(format=format, package_dir=package_dir,
+                           config=config, source_bundle=source,
                            vendor=vendor, verbose=verbose)
+        print()
 
 
-UPDATE_TASK_ARGS_HELP = TASK_ARGS_HELP_MAP_WITH_INIT_ARGS
-UPDATE_TASK_ARGS_HELP.update(
-    define="CMake define: NAME=VALUE (as string w/o whitespace)"
-)
-
-
-@task(aliases=["update"], iterable=["define"], help=UPDATE_TASK_ARGS_HELP)
+@task(aliases=["update"], iterable=["define"], help={
+    "define": TASK_HELP4PARAM_DEFINE,
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+})
 def update_config(ctx, define, project="all", build_config=None, generator=None):
     """Update CMake build_dir configuration for cmake project(s)."""
     cmake_define_parts = define   # List of cmake definitions: NAME=VALUE
@@ -224,54 +245,80 @@ def update_config(ctx, define, project="all", build_config=None, generator=None)
         cmake_project.update(**cmake_defines_data)
 
 
-@task(help=TASK_ARGS_HELP_MAP)
-def clean(ctx, project="all", build_config=None, args=None,
+@task(iterable=["arg"], help={
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "arg": "CMake build clean argument (optional, many)"
+})
+def clean(ctx, arg=None, project="all", build_config=None,
           dry_run=False, strict=True):
     """Clean cmake project(s) by using the build system."""
+    cmake_args = arg or []
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         strict=True)
+                                         strict=True)   # MAYBE: strict=strict
     for cmake_project in cmake_projects:
-        cmake_project.clean(args=args)     # MAYBE: dry_run=dry_run)
+        cmake_project.clean(args=cmake_args)     # MAYBE: dry_run=dry_run)
 
 
 @task
 def clean_and_ignore_failures(ctx, project="all", build_config=None, args=None,
                               dry_run=False):
     """Perform build-system clean target and ignore any failures (best-effort)."""
-    clean(ctx, project=project, build_config=build_config, args=args,
-          strict=False)
+    clean(ctx, project=project, build_config=build_config, strict=False)
 
 
-@task(help=TASK_ARGS_HELP_MAP)
-def reinit(ctx, project="all", build_config=None, generator=None, args=None):
+@task(iterable=["arg"], help={
+    "arg": TASK_HELP4PARAM_INIT_ARG,
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+})
+def reinit(ctx, project="all", build_config=None, generator=None, arg=None):
     """Reinit cmake projects (performs: cleanup, init)."""
     # -- HINT: Preserve pre-existing cmake_project.cmake_generator
+    cmake_init_args = arg or None
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
-                                         init_args=args)
+                                         init_args=cmake_init_args)
     cmake_runner = CMakeBuildRunner(cmake_projects)
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
         cmake_runner.set_cmake_generator(generator)
-    cmake_runner.reinit(args=args)    # PREPARED, TODO: dry_run=dry_run)
+    cmake_runner.reinit(args=cmake_init_args)    # PREPARED, TODO: dry_run=dry_run)
 
 
-@task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
+@task(iterable=["arg", "init_arg"], help={
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+    "arg": TASK_HELP4PARAM_ARG,
+    "init-arg": TASK_HELP4PARAM_INIT_ARG,
+})
 def rebuild(ctx, project="all", build_config=None, generator=None,
-            args=None, init_args=None):
+            arg=None, init_arg=None):
     """Rebuild cmake projects (performs: clean, build)."""
+    cmake_build_args = arg or []
+    cmake_init_args = init_arg or [ ]
     cmake_projects = make_cmake_projects(ctx, project,
                                          build_config=build_config)
     cmake_runner = CMakeBuildRunner(cmake_projects)
     if generator:
         # -- OVERRIDE: cmake_generator for all cmake_projects
         cmake_runner.set_cmake_generator(generator)
-    cmake_runner.rebuild(args=args, init_args=init_args)
+    cmake_runner.rebuild(args=cmake_build_args, init_args=cmake_init_args)
     # PREPARED, TODO: dry_run=dry_run)
 
 
-@task(help=TASK_ARGS_HELP_MAP_WITH_INIT_ARGS)
+@task(iterable=["arg", "init_arg", "test-arg"], help={
+    "project": TASK_HELP4PARAM_PROJECT,
+    "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
+    "generator": TASK_HELP4PARAM_GENERATOR,
+    "arg": TASK_HELP4PARAM_ARG,
+    "init-arg": TASK_HELP4PARAM_INIT_ARG,
+    "test-arg": "CMake test arg (optional, many)",
+    "use-test": "Perform CMake test step (optional)",
+})
 def redo(ctx, project="all", build_config=None, generator=None,
-         args=None, init_args=None, test_args=None, use_test=False):
+         arg=None, init_arg=None, test_arg=None, use_test=False):
     """Build cycle for cmake project(s) (performs: reinit, build, ...).
 
     Steps:
@@ -280,15 +327,18 @@ def redo(ctx, project="all", build_config=None, generator=None,
     - cmake.build
     - OPTIONAL: cmake.test (= ctest)  -- enabled via: --use-test option
     """
+    cmake_build_args = arg or []
+    cmake_init_args = init_arg or []
+    cmake_test_args = test_arg or []
     cmake_projects = make_cmake_projects(ctx, project,
                                          build_config=build_config,
                                          generator=generator,
-                                         init_args=init_args)
+                                         init_args=cmake_init_args)
     for cmake_project in cmake_projects:
-        cmake_project.reinit(args=init_args)
-        cmake_project.build(args=args)
+        cmake_project.reinit(args=cmake_init_args)
+        cmake_project.build(args=cmake_build_args)
         if use_test:
-            cmake_project.test(args=test_args)
+            cmake_project.test(args=cmake_test_args)
 
 
 def cmake_build_show_projects(projects):

@@ -5,7 +5,6 @@ from behave import given, when, then, step
 from behave4cmake_build.cmake_build_util import make_cmake_project
 from path import Path
 
-
 @step(u'I use the CMake project "{project_dir}" with build_config="{build_config}"')
 def step_i_use_cmake_project_with_build_config(ctx, project_dir, build_config=None):
     workdir = Path(ctx.workdir or ".")
