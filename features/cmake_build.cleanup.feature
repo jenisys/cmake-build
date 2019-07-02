@@ -7,13 +7,15 @@ Feature: cmake-build cleanup Command
 
   HINT: Cleans up any build_dir from any build_config (matching: cleanup.directories patterns).
 
-
   Background: Setup CMake Workspace
-    Given a new working directory
-    And I copy the directory "examples/cmake/" to the working directory
-    And I copy the CMake project "examples/library_hello/" to the working directory
-    And I use the directory "library_hello/" as working directory
-    And I use the CMake project "."
+    Given I use CMake project "examples/library_hello/" to setup a new working directory
+
+  # -- SAME AS:
+  #  Given a new working directory
+  #  And I copy the directory "examples/cmake/" to the working directory
+  #  And I copy the CMake project "examples/library_hello/" to the working directory
+  #  And I use the directory "library_hello/" as working directory
+  #  And I use the CMake project "."
 
 
   Scenario: CMake Project (build dir) is initialized (Perform: cleanup)

@@ -5,12 +5,15 @@ Feature: Use another configfile name
   I want sometimes to use another configfile name
   So that I can provide multiple config variants and be more flexible.
 
+  # -- SAME-AS:
+  #    Given a new working directory
+  #    And I copy the directory "examples/cmake/" to the working directory
+  #    And I copy the CMake project "examples/library_hello/" to the working directory
+  #    And I use the directory "library_hello/" as working directory
+  #    And I use the CMake project "."
+
   Background: Setup CMake Workspace
-    Given a new working directory
-    And I copy the directory "examples/cmake/" to the working directory
-    And I copy the CMake project "examples/library_hello/" to the working directory
-    And I use the directory "library_hello/" as working directory
-    And I use the CMake project "."
+    Given I use CMake project "examples/library_hello/" to setup a new working directory
     And a file named "other.yaml" with:
         """
         cmake_generator: make

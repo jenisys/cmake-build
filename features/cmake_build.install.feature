@@ -24,12 +24,14 @@ Feature: cmake-build install Command
   .   PLACEHOLDER EXAMPLE:
   .     cmake_install_prefix: {HOME}/.local/{BUILD_CONFIG}
 
+  # -- OLD:
+  #    Given a new working directory
+  #    And I copy the directory "examples/cmake/" to the working directory
+  #    And I copy the CMake project "examples/library_hello/" to the working directory
+  #    And I use the directory "library_hello/" as working directory
+  #    And I use the CMake project "."
   Background: Setup CMake Workspace
-    Given a new working directory
-    And I copy the directory "examples/cmake/" to the working directory
-    And I copy the CMake project "examples/library_hello/" to the working directory
-    And I use the directory "library_hello/" as working directory
-    And I use the CMake project "."
+    Given I use CMake project "examples/library_hello/" to setup a new working directory
 
 
   Scenario: Use install if project is not build yet (perform: init, build, install)

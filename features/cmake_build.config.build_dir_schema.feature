@@ -6,11 +6,14 @@ Feature: config-parameter build_dir_schema
   So that I can provide multiple build_dir naming variants (and be more flexible).
 
   Background: Setup CMake Workspace
-    Given a new working directory
-    And I copy the directory "examples/cmake/" to the working directory
-    And I copy the CMake project "examples/library_hello/" to the working directory
-    And I use the directory "library_hello/" as working directory
-    And I use the CMake project "."
+    Given I use CMake project "examples/library_hello/" to setup a new working directory
+
+  # -- SAME AS:
+  #  Given a new working directory
+  #  And I copy the directory "examples/cmake/" to the working directory
+  #  And I copy the CMake project "examples/library_hello/" to the working directory
+  #  And I use the directory "library_hello/" as working directory
+  #  And I use the CMake project "."
 
 
   Scenario: Use default build_dir_schema="build.{BUILD_CONFIG}" if not specified
