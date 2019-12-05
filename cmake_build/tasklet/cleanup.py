@@ -198,9 +198,11 @@ def path_glob(pattern, current_dir=None):
         for p in current_dir.glob(pattern):
             yield Path(str(p))
     except OSError as e:
-        # -- CORNER-CASE: x.glob(pattern) may fail with:
+        # -- CORNER-CASE 1: x.glob(pattern) may fail with:
         # OSError: [Errno 13] Permission denied: <filename>
         # HINT: Directory lacks excutable permissions for traversal.
+        # -- CORNER-CASE 2: symlinked endless loop
+        # OSError: [Errno 62] Too many levels of symbolic links: <filename>
         print("{0}: {1}".format(e.__class__.__name__, e))
 
 
