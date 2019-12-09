@@ -1,5 +1,5 @@
 # ============================================================================
-# cmake-build: PYTHON PACKAGE REQUIREMENTS: All requirements
+# cmake-build: PYTHON PACKAGE REQUIREMENTS -- optional parts
 # ============================================================================
 # DESCRIPTION:
 #    pip install -r <THIS_FILE>
@@ -7,8 +7,8 @@
 # SEE ALSO:
 #  * http://www.pip-installer.org/
 # ============================================================================
-# ALREADY: -r testing.txt
-# ALREADY: -r docs.txt
 
--r basic.txt
--r develop.txt
+# -- HINT: cmake can be installed as python wheel (provide by cmake team).
+# REASON: Many package managers (debian, apt, ...) are rather conservative.
+# BUT:    Developer(s) often need newer versions.
+cmake >= 3.15

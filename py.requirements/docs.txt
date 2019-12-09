@@ -1,5 +1,5 @@
 # ============================================================================
-# BEHAVE: PYTHON PACKAGE REQUIREMENTS: For documentation generation
+# cmake-build: PYTHON PACKAGE REQUIREMENTS: For documentation generation
 # ============================================================================
 # REQUIRES: pip >= 8.0
 

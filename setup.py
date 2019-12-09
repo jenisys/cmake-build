@@ -67,10 +67,12 @@ setup(
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
     install_requires=[
         "invoke >= 1.2.0",
-        "path.py >= 11.5.0",
         "six >= 1.12.0",
         "click >= 7.0.0",
         "pycmd",
+        # -- HINT: path.py => path (python-install-package was renamed for python3)
+        "path.py >= 11.5.0; python_version <  '3.0'",
+        "path >= 13.1.0;    python_version >= '3.0'",
         "pathlib; python_version < '3.4'",
     ],
     tests_require=[
