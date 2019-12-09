@@ -91,8 +91,9 @@ class PersistentData(object):
 
     @classmethod
     def parse(cls, text, encoding=None):
-        encoding = encoding or "UTF-8"
-        data = json.loads(text, encoding=encoding)
+        # encoding = encoding or "UTF-8"
+        # data = json.loads(text, encoding=encoding)
+        data = json.loads(text)     # FOR: py3.8
         return data
 
     @classmethod
