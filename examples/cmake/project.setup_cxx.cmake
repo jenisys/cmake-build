@@ -19,8 +19,14 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 # ----------------------------------------------------------------------------
 # CMAKE C++ COMPILER SETUP:
 # ----------------------------------------------------------------------------
+include("${CMAKE_CURRENT_LIST_DIR}/cxx.setup_cxx_standard.cmake")
+
 # -- CMAKE_CXX_STANDARD: Needs to defined before target to have any effect.
-set(CMAKE_CXX_STANDARD 11)  # Enable C++11 standard
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)  # Enable C++14 standard
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
 set(CMAKE_CXX_EXTRA_FLAGS "-Wall -Wpedantic")
 set(CMAKE_CXX_EXTRA_FLAGS "")
 

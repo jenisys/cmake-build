@@ -14,7 +14,6 @@
 # ===========================================================================
 
 cmake_generator: ninja
-# MAYBE: cmake_toolchain: cmake/toolchain/XXX.cmake
 build_dir_schema: "build.{BUILD_CONFIG}"
 
 build_config: debug
@@ -23,7 +22,7 @@ build_configs:
       # cmake_build_type: Debug
       # cmake_toolchain: cmake/toolchain/XXX.cmake
       cmake_defines:
-        - CMAKE_BUILD_CONFIG: "debug"
+        - BUILD_TESTING: ON
 
   - release:
       cmake_build_type: MinSizeRel

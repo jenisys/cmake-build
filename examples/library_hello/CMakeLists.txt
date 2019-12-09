@@ -3,7 +3,10 @@
 # ===========================================================================
 
 cmake_minimum_required(VERSION 3.12)
-include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/toolchain.optional/ccache.cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+include("ccache")
+
+
 project(libhello VERSION 0.1.0 LANGUAGES CXX)
 
 set(_TOPDIR "${PROJECT_SOURCE_DIR}/..")
@@ -12,11 +15,25 @@ include(${_TOPDIR}/cmake/project.setup_cxx.cmake)
 # ---------------------------------------------------------------------------
 # SECTION: Targets -- One Static Library
 # ---------------------------------------------------------------------------
-# -- LIBRARY: hello
-add_library(hello STATIC
-    src/hello/Responder.cpp
+# -- HEADER-ONLY LIBRARY: util
+add_library(util INTERFACE)
+add_library(HELLO::util ALIAS util)
+target_include_directories(util
+    INTERFACE
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
+
+# -- LIBRARY: hello
+add_library(hello STATIC)
 add_library(HELLO::hello ALIAS hello)
+target_sources(hello
+    PRIVATE
+        src/hello/Responder.cpp
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hello/Responder.hpp
+)
+target_link_libraries(hello INTERFACE HELLO::util)
 target_include_directories(hello
     PUBLIC
         $<INSTALL_INTERFACE:include>
@@ -29,39 +46,41 @@ target_include_directories(hello
 # ---------------------------------------------------------------------------
 # SECTION: Unittests
 # ---------------------------------------------------------------------------
-# enable_testing()
+if(BUILD_TESTING)
+    include(CTest)
 
-set(TEST_PROGRAMS test_hello_Responder)
+    set(TEST_PROGRAMS test_hello_Responder)
 
-# -- SOLUTION 1: Builds other programs, libs first. Then auto-runs tests.
-set(RUN_AUTO_TESTS ON)
-if(RUN_AUTO_TESTS)
-    add_custom_target(tests ALL
-        COMMAND ctest
-        DEPENDS ${TEST_PROGRAMS}
-        COMMENT "AUTO-RUN TESTS with: all")
+    # -- SOLUTION 1: Builds other programs, libs first. Then auto-runs tests.
+    set(RUN_AUTO_TESTS ON)
+    if(RUN_AUTO_TESTS)
+        add_custom_target(tests ALL
+            COMMAND ctest
+            DEPENDS ${TEST_PROGRAMS}
+            COMMENT "AUTO-RUN TESTS with: all")
+    endif()
+
+    # -- TEST PROGRAM: test_hello_Responder
+    add_executable(test_hello_Responder)
+    target_sources(test_hello_Responder PRIVATE
+        tests/hello/test_Responder.cpp
+    )
+    target_link_libraries(test_hello_Responder PRIVATE HELLO::hello)
+
+    # -- TESTS:
+    add_test(NAME test_hello_Responder_without_args   COMMAND test_hello_Responder)
+    set_tests_properties(test_hello_Responder_without_args PROPERTIES
+        PASS_REGULAR_EXPRESSION "RESPONDER: Hello Alice")
+
+    add_test(NAME test_hello_Responder_with_one_arg   COMMAND test_hello_Responder Bob)
+    set_tests_properties(test_hello_Responder_with_one_arg PROPERTIES
+        PASS_REGULAR_EXPRESSION "RESPONDER: Hello Bob")
+
+    add_test(NAME test_hello_Responder_with_many_args COMMAND test_hello_Responder Alice and Bob)
+    set_tests_properties(test_hello_Responder_with_many_args PROPERTIES
+        PASS_REGULAR_EXPRESSION "RESPONDER: Hello Alice and Bob")
+
 endif()
-
-# -- TEST PROGRAM: test_hello_Responder
-add_executable(test_hello_Responder
-    test/hello/test_Responder.cpp
-)
-target_link_libraries(test_hello_Responder HELLO::hello)
-
-# -- TESTS:
-add_test(NAME test_hello_Responder_without_args   COMMAND test_hello_Responder)
-set_tests_properties(test_hello_Responder_without_args PROPERTIES 
-    PASS_REGULAR_EXPRESSION "RESPONDER: Hello Alice")
-
-add_test(NAME test_hello_Responder_with_one_arg   COMMAND test_hello_Responder Bob)
-set_tests_properties(test_hello_Responder_with_one_arg PROPERTIES 
-    PASS_REGULAR_EXPRESSION "RESPONDER: Hello Bob")
-
-add_test(NAME test_hello_Responder_with_many_args COMMAND test_hello_Responder Alice and Bob)
-set_tests_properties(test_hello_Responder_with_many_args PROPERTIES 
-    PASS_REGULAR_EXPRESSION "RESPONDER: Hello Alice and Bob")
-
-
 # ---------------------------------------------------------------------------
 # SUPPORT: install
 # ---------------------------------------------------------------------------
@@ -71,6 +90,9 @@ install(TARGETS hello DESTINATION lib)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/hello
         DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.hpp")
 # install(FILES src/test.h DESTINATION include)
 
 # ---------------------------------------------------------------------------
