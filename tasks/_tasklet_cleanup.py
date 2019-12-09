@@ -139,7 +139,10 @@ def cleanup_dirs(patterns, dry_run=False, workdir="."):
                 print("RMTREE: %s (dry-run)" % directory)
             else:
                 print("RMTREE: %s" % directory)
-                directory.rmtree_p()
+                try:
+                    directory.rmtree_p()
+                except (os.error, OSError) as e:
+                    print("%s: %s" % (e.__class__.__name__, e))
 
 
 def cleanup_files(patterns, dry_run=False, workdir="."):
