@@ -77,7 +77,7 @@ namespace.add_task(init)
 namespace.add_task(reinit)
 namespace.add_task(cmake_examples)
 namespace.add_collection(Collection.from_module(test))
-namespace.add_collection(Collection.from_module(cmake_build, name="cmake_build"))
+namespace.add_collection(Collection.from_module(cmake_build, name="cmake"))
 # DISABLED: namespace.add_collection(Collection.from_module(docs))
 # DISABLED: namespace.add_collection(Collection.from_module(release))
 
