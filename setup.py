@@ -71,8 +71,8 @@ setup(
         "click >= 7.0.0",
         "pycmd",
         # -- HINT: path.py => path (python-install-package was renamed for python3)
-        "path.py >= 11.5.0; python_version <  '3.0'",
-        "path >= 13.1.0;    python_version >= '3.0'",
+        "path.py >= 11.5.0; python_version <  '3.5'",
+        "path >= 13.1.0;    python_version >= '3.5'",
         "pathlib; python_version < '3.4'",
     ],
     tests_require=[
