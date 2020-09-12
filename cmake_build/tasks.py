@@ -116,14 +116,14 @@ def init(ctx, project="all", build_config=None, generator=None,
     "init-arg": TASK_HELP4PARAM_INIT_ARG,
     "define": TASK_HELP4PARAM_DEFINE,
     "target": "CMake build target to use (optional)",
-    "parallel": "CMAKE_PARALLEL value (as int)",
+    "jobs": "CMAKE_PARALLEL value (as int)",
     "clean-first": "Use clean-first before build (optional)",
     "verbose": "Use CMake build verbose mode (optional)",
 })
 def build(ctx,
           project="all", build_config=None, generator=None,
           arg=None, opt=None, init_arg=None, define=None,
-          target=None, parallel=-1, clean_first=False, verbose=False):
+          target=None, jobs=-1, clean_first=False, verbose=False):
     """Build cmake project(s)."""
     # -- HINT: Invoke default tasks needs default values for iterable params.
     cmake_build_args = arg or []
@@ -140,7 +140,7 @@ def build(ctx,
                             options=cmake_build_options,
                             init_args=cmake_init_args,
                             target=target,
-                            parallel=parallel,
+                            parallel=jobs,
                             clean_first=clean_first,
                             verbose=verbose)
 
@@ -152,16 +152,45 @@ def build(ctx,
     "build-config": TASK_HELP4PARAM_BUILD_CONFIG,
     "generator": TASK_HELP4PARAM_GENERATOR,
     "verbose": "Use verbose mode (optional)",
+    # -- CTEST SPECIFIC OPTIONS:
+    "repeat": "Repeat tests (until-pass:n, until-fail:n, after-timeout:n).",
+    "rerun-failed": "Rerun failed tests.",
+    "output-log": "Use --output-log=<FILE>",
+    "output-on-failure": "Show test output when failure(s) occur.",
+    "stop-on-failure":   "Stop test-run when failure(s) occur.",
+    "progress": "Show progress.",
+    "jobs": "Number of jobs (as int, CMAKE_PARALLEL).",
 })
 def test(ctx, project="all", build_config=None, generator=None,
-         arg=None, init_arg=None, verbose=False):
+         arg=None, init_arg=None, verbose=False,
+         # -- CTEST SPECIFIC:
+         repeat=None, rerun_failed=False,
+         output_log=None, progress=False,
+         output_on_failure=False, stop_on_failure=False, jobs=0):
     """Test cmake projects (performs: ctest)."""
-    cmake_test_args = arg or []
+    ctest_args = arg or []
     cmake_init_args = init_arg or []
+    # -- CTEST OPTIONS:
+    if repeat:
+        ctest_args.append("--repeat {0}".format(repeat))
+    if rerun_failed:
+        ctest_args.append("--rerun-failed")
+    if output_on_failure:
+        # -- RELATED: CTEST_OUTPUT_ON_FAILURE (environment variable)
+        ctest_args.append("--output-on-failure")
+    if stop_on_failure:
+        ctest_args.append("--stop-on-failure")
+    if progress:
+        ctest_args.append("--progress")
+    if output_log:
+        ctest_args.append("--output-log {0}".format(output_log))
+    if jobs:
+        ctest_args.append("--parallel {0}".format(jobs))
+
     cmake_projects = make_cmake_projects(ctx, project, build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.test(args=cmake_test_args,
+        cmake_project.test(args=ctest_args,
                            init_args=cmake_init_args,
                            verbose=verbose)
 
@@ -329,7 +358,7 @@ def redo(ctx, project="all", build_config=None, generator=None,
     """
     cmake_build_args = arg or []
     cmake_init_args = init_arg or []
-    cmake_test_args = test_arg or []
+    ctest_args = test_arg or []
     cmake_projects = make_cmake_projects(ctx, project,
                                          build_config=build_config,
                                          generator=generator,
@@ -338,7 +367,7 @@ def redo(ctx, project="all", build_config=None, generator=None,
         cmake_project.reinit(args=cmake_init_args)
         cmake_project.build(args=cmake_build_args)
         if use_test:
-            cmake_project.test(args=cmake_test_args)
+            cmake_project.test(args=ctest_args)
 
 
 def cmake_build_show_projects(projects):
@@ -392,6 +421,7 @@ TASKS_CONFIG_DEFAULTS = {
     "build_dir_schema": "build.{BUILD_CONFIG}",
     "build_config": BUILD_CONFIG_DEFAULT,
     "build_configs": [],
+    "build_config_aliases": {}, # HINT: Map string -> sequence<string> (or string or callable)
     "build_configs_map": {},    # -- AVOID-HERE: BUILD_CONFIG_DEFAULT_MAP.copy(),
     "projects": [],
 }
