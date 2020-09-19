@@ -3,14 +3,21 @@
 # ===========================================================================
 
 cmake_minimum_required(VERSION 3.12)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
 include("ccache")
 
+set(MASTER_PROJECT OFF)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(MASTER_PROJECT ON)
+    project(libhello VERSION 0.2.1 LANGUAGES CXX)
+    message(STATUS "USING: CMAKE_VERSION=${CMAKE_VERSION} (MASTER_PROJECT=${PROJECT_NAME})")
+    include("cxx.setup_cxx_standard")
+    include("cxx.setup_project")
+endif()
 
-project(libhello VERSION 0.1.0 LANGUAGES CXX)
+option(LIBHELLO_BUILD_TESTS "Enable/disable tests for libhello" ${MASTER_PROJECT})
+option(LIBHELLO_AUTO_RUN_TESTS "Automatically run tests after build for libhello" OFF)
 
-set(_TOPDIR "${PROJECT_SOURCE_DIR}/..")
-include(${_TOPDIR}/cmake/project.setup_cxx.cmake)
 
 # ---------------------------------------------------------------------------
 # SECTION: Targets -- One Static Library
@@ -46,14 +53,13 @@ target_include_directories(hello
 # ---------------------------------------------------------------------------
 # SECTION: Unittests
 # ---------------------------------------------------------------------------
-if(BUILD_TESTING)
-    include(CTest)
+if(LIBHELLO_BUILD_TESTS)
+    enable_testing()
 
     set(TEST_PROGRAMS test_hello_Responder)
 
     # -- SOLUTION 1: Builds other programs, libs first. Then auto-runs tests.
-    set(RUN_AUTO_TESTS ON)
-    if(RUN_AUTO_TESTS)
+    if(LIBHELLO_AUTO_RUN_TESTS)
         add_custom_target(tests ALL
             COMMAND ctest
             DEPENDS ${TEST_PROGRAMS}

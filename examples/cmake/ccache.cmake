@@ -30,6 +30,7 @@ cmake_minimum_required(VERSION 3.4)
 #
 # ===========================================================================
 # CCACHE_DIR : path = Where ccache compiled output is kept; $HOME/.ccache
+include_guard(DIRECTORY)
 
 option(USE_CCACHE "Enable/Disable CCACHE (Compiler Cache) usage" ON)
 find_program(CCACHE_PROGRAM ccache)
