@@ -46,18 +46,24 @@ def before_all(context):
     setup_active_tag_values(active_tag_value_provider, context.config.userdata)
     setup_python_path()
     setup_command_shell_processors4cmake_build()
-    cleanup_environment_variables()
+    cleanup_environment_variables(verbose=True)
 
 
 def before_feature(context, feature):
     if active_tag_matcher.should_exclude_with(feature.tags):
         feature.skip(reason=active_tag_matcher.exclude_reason)
 
+def after_feature(context, feature):
+    # -- ENSURE: CMAKE_* environment variables are removed.
+    cleanup_environment_variables()
 
 def before_scenario(context, scenario):
     if active_tag_matcher.should_exclude_with(scenario.effective_tags):
         scenario.skip(reason=active_tag_matcher.exclude_reason)
 
+def after_scenario(context, scenario):
+    # -- ENSURE: CMAKE_* environment variables are removed.
+    cleanup_environment_variables()
 
 def before_tag(context, tag):
     if tag.startswith("fixture."):
@@ -89,7 +95,7 @@ def setup_command_shell_processors4cmake_build():
             processor = processor_class()
             Command.POSTPROCESSOR_MAP["cmake-build"].append(processor)
 
-def cleanup_environment_variables():
+def cleanup_environment_variables(verbose=False):
     """Ensure that a clean process/shell environment exists
     without environment variables that cause side effects during tests:
 
@@ -99,5 +105,7 @@ def cleanup_environment_variables():
     CLEANUP_VARIABLE_NAMES = ["CMAKE_BUILD_CONFIG"]
     for name in os.environ.keys():
         if name.startswith("CMAKE_") or (name in CLEANUP_VARIABLE_NAMES):
-            print("REMOVE ENVIRONMENT-VARIABLE: {0}={1}".format(name, os.environ[name]))
-            os.environ.pop(name)
+            # env_value = os.environ[name]
+            env_value = os.environ.pop(name)
+            if verbose:
+                print("REMOVE ENVIRONMENT-VARIABLE: {0}={1}".format(name, env_value))
