@@ -9,7 +9,7 @@ GOALS:
 - Drop Python2.7 support.
 
 
-Release v0.2.0 (UNRELEASED)
+Release v0.2.0 (2020-09-21)
 -------------------------------------------------------------------------------
 
 FEATURES:
