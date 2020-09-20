@@ -54,7 +54,7 @@ def step_given_i_copy_cmake_project_to_workdir(ctx, cmake_project_dir):
 
 
 @given(u'I use CMake project "{project_dir}" to setup a new working directory')
-def step_setup_working_directory_with_cmake_project(ctx, project_dir):
+def step_in_new_workspace_setup_cmake_project_and_use_as_working_directoy(ctx, project_dir):
     new_project_dir = Path(project_dir).normpath().basename()
     ctx.execute_steps(u"""
         Given a new working directory
@@ -65,3 +65,14 @@ def step_setup_working_directory_with_cmake_project(ctx, project_dir):
         """.format(project_dir=project_dir, new_project_dir=new_project_dir)
     )
 
+# PREPARED:
+# @given(u'I setup the CMake project "{project_dir}" in my workspace and use it as working directory')
+# def step_in_existing_workspace_setup_cmake_project_and_use_as_working_directoy(ctx, project_dir):
+#     new_project_dir = Path(project_dir).normpath().basename()
+#     ctx.execute_steps(u"""
+#         Given I copy the directory "examples/cmake/" to the working directory
+#         And I copy the CMake project "{project_dir}" to the working directory
+#         And I use the directory "{new_project_dir}" as working directory
+#         And I use the CMake project "."
+#         """.format(project_dir=project_dir, new_project_dir=new_project_dir)
+#     )

@@ -33,7 +33,7 @@ Feature: cmake-build clean Command
       """
     And the command output should contain:
       """
-      cmake --build . -- clean
+      cmake --build .  -- clean
       """
     And the CMake project is initialized for build_config="debug"
 
@@ -60,7 +60,7 @@ Feature: cmake-build clean Command
       """
     And the command output should contain:
       """
-      cmake --build . -- clean
+      cmake --build .  -- clean
       """
 
   Scenario: CMake Project (build dir) is not created yet (Skip: clean)

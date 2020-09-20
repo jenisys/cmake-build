@@ -11,7 +11,9 @@ Feature: Create Packages with CPack
   . HINT:
   .   Binary-package names and source-package names are pre-configured.
   .   The naming-scheme may differ in other CMake project examples.
-
+  .
+  . OPTION ALIASES:
+  .   "--source" shorter form of "--source-bundle"
 
   Background: Setup CMake project workspace
     Given I use CMake project "examples/library_hello/" to setup a new working directory
@@ -26,7 +28,7 @@ Feature: Create Packages with CPack
       """
     And the command output should contain:
       """
-      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.1.0_binary.<PackageFileExtension> generated.
+      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.2.1_binary.<PackageFileExtension> generated.
       """
     But note that "build-step is often required before packing a binary-package"
 
@@ -45,7 +47,7 @@ Feature: Create Packages with CPack
       """
     And the command output should contain:
       """
-      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.1.0_source.<PackageFileExtension> generated.
+      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.2.1_source.<PackageFileExtension> generated.
       """
     But note that "source-packages must use the --source option"
 
@@ -65,7 +67,7 @@ Feature: Create Packages with CPack
       """
     And the command output should contain:
       """
-      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.1.0_binary.zip generated.
+      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.2.1_binary.zip generated.
       """
     But note that "build-step is often required before packing a binary-package"
     And note that "the default package-format may differ and depend on CMakeLists.txt"
@@ -80,20 +82,20 @@ Feature: Create Packages with CPack
       """
     And the command output should contain:
       """
-      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.1.0_source.zip generated.
+      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.2.1_source.zip generated.
       """
     But note that "the default package-format may differ and depend on CMakeLists.txt"
 
 
-  Scenario: Pack with --config=CPACK-CONFIG-FILE option
-    When I run "cmake-build pack --format=ZIP --config=CPackSourceConfig.cmake"
+  Scenario: Pack with --cpack-config=CPACK-CONFIG-FILE option
+    When I run "cmake-build pack --format=ZIP --cpack-config=CPackSourceConfig.cmake"
     Then it should pass with:
       """
       cpack -G ZIP --config CPackSourceConfig.cmake
       """
     And the command output should contain:
       """
-      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.1.0_source.zip generated.
+      CPack: - package: {__WORKDIR__}/build.debug/libhello-0.2.1_source.zip generated.
       """
 
   Scenario: Pack with --package-dir=DESTDIR option (Override: CPACK_PACKAGE_DIRECTORY)
@@ -105,7 +107,7 @@ Feature: Create Packages with CPack
       """
     And the command output should contain:
       """
-      CPack: - package: {__WORKDIR__}/build.debug/OTHER_DIR/libhello-0.1.0_binary.zip generated.
+      CPack: - package: {__WORKDIR__}/build.debug/OTHER_DIR/libhello-0.2.1_binary.zip generated.
       """
 
   Scenario: Pack performs init (if needed)
@@ -123,7 +125,7 @@ Feature: Create Packages with CPack
     Given a file named "CMakeLists.txt" with:
       """
       cmake_minimum_required(VERSION 3.0)
-      project(libhello VERSION 0.1.1 LANGUAGES CXX)
+      project(libhello VERSION 0.2.2 LANGUAGES CXX)
 
       add_library(hello STATIC
           src/hello/Responder.cpp

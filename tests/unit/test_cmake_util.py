@@ -78,6 +78,8 @@ def test_cmake_cmdline_generator_option__with_two_words_are_quoted(generator, ex
 @pytest.mark.parametrize("generator, expected", [
     ("ninja", "-G Ninja"),
     ("make",  '-G "Unix Makefiles"'),
+    ("ninja.multi",  '-G "Ninja Multi-Config"'),
+    ("ninja-multi",  '-G "Ninja Multi-Config"'),
 ])
 def test_cmake_cmdline_generator_option__with_alias(generator, expected):
     text = cmake_cmdline_generator_option(generator)
@@ -188,6 +190,26 @@ def test_cmake_cmdline__with_toolchain(toolchain):
     expected = cmake_cmdline_toolchain_option(toolchain)
     actual = cmake_cmdline(toolchain=toolchain)
     assert actual == expected
+
+@pytest.mark.parametrize("toolchain, defines", [
+    ("THE_TOOLCHAIN", [("CMAKE_TOOLCHAIN_FILE", "OTHER_TOOLCHAIN")]),
+])
+def test_cmake_cmdline__with_toolchain_and_defines(toolchain, defines):
+    # -- OVERRIDE: Toolchain overrides any CMAKE_TOOLCHAIN_FILE define
+    expected = cmake_cmdline_toolchain_option(toolchain)
+    actual = cmake_cmdline(toolchain=toolchain, defines=defines)
+    assert expected in actual
+    assert "OTHER_TOOLCHAIN" not in actual
+
+@pytest.mark.parametrize("build_type, defines", [
+    ("Debug", [("CMAKE_BUILD_TYPE", "OTHER_BUILD_TYPE")]),
+])
+def test_cmake_cmdline__with_build_type_and_defines(build_type, defines):
+    # -- OVERRIDE: build_type overrides any CMAKE_BUILD_TYPE define
+    expected = "-DCMAKE_BUILD_TYPE={0}".format(build_type)
+    actual = cmake_cmdline(build_type=build_type, defines=defines)
+    assert  expected in actual
+    assert "OTHER_BUILD_TYPE" not in actual
 
 
 @pytest.mark.parametrize("defines", [

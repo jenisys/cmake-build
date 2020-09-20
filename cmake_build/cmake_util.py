@@ -20,6 +20,7 @@ import six
 # The following generators are available on this platform:
 #   Unix Makefiles               = Generates standard UNIX makefiles.
 #   Ninja                        = Generates build.ninja files.
+#   Ninja Multi-Config           = Generates build-<Config>.ninja files.
 #   Xcode                        = Generate Xcode project files.
 #   CodeBlocks - Ninja           = Generates CodeBlocks project files.
 #   CodeBlocks - Unix Makefiles  = Generates CodeBlocks project files.
@@ -40,6 +41,8 @@ BUILD_CONFIG_DEFAULT = "default"
 CMAKE_DEFAULT_GENERATOR = "ninja"  # EMPTY means Makefiles ('Unix Makefiles')
 CMAKE_GENERATOR_ALIAS_MAP = {
     "ninja":    "Ninja",
+    "ninja.multi":  "Ninja Multi-Config",
+    "ninja-multi":  "Ninja Multi-Config",
     "make":     "Unix Makefiles",
     "xcode":    "Xcode",
     "CodeBlocks":       "CodeBlocks - Ninja",
@@ -154,11 +157,11 @@ def cmake_cmdline_generator_option(generator):
     generator_option = ""
     if generator:
         cmake_generator = CMAKE_GENERATOR_ALIAS_MAP.get(generator) or generator
-        generator_schema = '-G {0} '
+        generator_schema = '-G {0}'
         needs_quoting = cmake_generator.count(" ") > 0
         if needs_quoting:
             # -- CASE: Generator name w/ multiple words => QUOTE it.
-            generator_schema = '-G "{0}" '
+            generator_schema = '-G "{0}"'
         generator_option = generator_schema.format(cmake_generator)
     return generator_option
 
@@ -237,6 +240,17 @@ def cmake_normalize_defines(defines):
 
 def cmake_cmdline_define_options(defines, toolchain=None, build_type=None,
                                  install_prefix=None, **kwargs):
+    """Builds CMake define options for the command-line,
+    like: ``-DCMAKE_TOOLCHAIN_FILE=toolchain.cmake``
+
+    :param defines:     CMake defines (list, dict, OrderedDict).
+    :param generator:   CMAKE_GENERATOR to use (if any).
+    :param toolchain:   CMAKE_TOOLCHAIN_FILE to use (if any).
+    :param build_type:  CMAKE_BUILD_TYPE to use (if any).
+    :param install_prefex:  CMAKE_INSTALL_PREFIX to use (if any).
+    :param named_defines:   Additional CMake defines (name=value, ...).
+    :return: CMake define options (as string; BAD SHOULD BE: list).
+    """
     # print("XXX defines= %r" % defines)
     cmake_defines0 = OrderedDict(cmake_normalize_defines(defines or []))
     cmake_defines = OrderedDict()
@@ -282,26 +296,71 @@ def cmake_cmdline_define_options(defines, toolchain=None, build_type=None,
     return " ".join(define_options)
 
 
-def cmake_cmdline(args=None, defines=None, generator=None,
-                  toolchain=None, build_type=None, install_prefix=None,
-                  **named_defines):
-    """Build a CMake command-line from the parts"""
-    if args is None:
-        args = ""
+def cmake_cmdline_options(args=None, defines=None, generator=None,
+                  toolchain=None, build_type=None, config=None,
+                  install_prefix=None, **named_defines):
+    """Build CMake command-line options (as list) from the parts.
+
+    :param args:        CMake arguments to use (list<string>, string).
+    :param defines:     CMake defines (list, dict, OrderedDict).
+    :param generator:   CMAKE_GENERATOR to use (if any).
+    :param toolchain:   CMAKE_TOOLCHAIN_FILE to use (if any).
+    :param build_type:  CMAKE_BUILD_TYPE to use (if any).
+    :param config:      CONFIG to use (cmake --config <CONFIG> option).
+    :param install_prefex:  CMAKE_INSTALL_PREFIX to use (if any).
+    :param named_defines:   Additional CMake defines (name=value, ...).
+    :return: CMake command-line options (as list).
+    """
     if defines is None:
         defines = []
     elif isinstance(defines, (dict, OrderedDict)):
         defines = defines.items()
 
-    generator_part = cmake_cmdline_generator_option(generator)
-    defines_part = cmake_cmdline_define_options(defines,
+    build_type = config or build_type
+    options =[]
+    if generator:
+        options.append(cmake_cmdline_generator_option(generator))
+    if config:
+        # -- SUPPORT MULTI-CONFIGURATION GENERATORS:
+        options.append("--config {0}".format(config))
+
+    if defines or toolchain or build_type or install_prefix:
+        cmake_define_options = cmake_cmdline_define_options(defines,
                                                 toolchain=toolchain,
                                                 build_type=build_type,
                                                 install_prefix=install_prefix)
-    if not isinstance(args, six.string_types):
-        args = " ".join([six.text_type(x) for x in args])
+        if isinstance(cmake_define_options, six.string_types):
+            # -- BAD: Normally returned as string
+            options.append(cmake_define_options)
+        else:
+            options.extend(cmake_define_options)
+    if args:
+        if isinstance(args, (list, tuple)):
+            options.extend(args)
+        else:
+            options.append(args)
+    return options
 
-    cmdline = "{generator}{defines} {args}".format(generator=generator_part,
-                                                   defines=defines_part,
-                                                   args=args)
+
+def cmake_cmdline(args=None, defines=None, generator=None,
+                  toolchain=None, build_type=None, config=None,
+                  install_prefix=None, **named_defines):
+    """Build a CMake command-line from the parts
+
+    :param args:        CMake arguments to use (list<string>, string).
+    :param defines:     CMake defines (list, dict, OrderedDict).
+    :param generator:   CMAKE_GENERATOR to use (if any).
+    :param toolchain:   CMAKE_TOOLCHAIN_FILE to use (if any).
+    :param build_type:  CMAKE_BUILD_TYPE to use (if any).
+    :param config:      CONFIG to use (cmake --config <CONFIG> option).
+    :param install_prefex:  CMAKE_INSTALL_PREFIX to use (if any).
+    :param named_defines:   Additional CMake defines (name=value, ...).
+    :return: CMake command-line (as string).
+    """
+    cmake_options = cmake_cmdline_options(args=args,
+                            defines=defines, generator=generator,
+                            toolchain=toolchain,
+                            build_type=build_type, config=config,
+                            install_prefix=install_prefix, **named_defines)
+    cmdline = " ".join(cmake_options)
     return cmdline.strip()

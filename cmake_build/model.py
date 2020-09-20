@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
 # pylint: disable=no-value-for-parameter, invalid-name
+# pylint: disable=useless-object-inheritance # RELATED-TO: Python3
+# pylint: disable=redefined-builtin,
 """
 Contains the CMake model entities to simplify interaction with `CMake`_.
 
@@ -45,6 +47,7 @@ def make_args_string(args):
 # CMAKE PROJECT CLASSES:
 # -----------------------------------------------------------------------------
 class CMakeProject(object):
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """CMake project entity that represents a
     CMake project with one build configuration (one build_dir).
 
@@ -82,6 +85,7 @@ class CMakeProject(object):
     """
     CMAKE_BUILD_DATA_FILENAME = ".cmake_build.build_config.json"
     CMAKE_BUILD_TYPE_DEFAULT = "Debug"
+    CMAKE_CONFIG_OVERRIDES_CMAKE_BUILD_TYPE = False
     REBUILD_USE_DEEP_CLEANUP = False
 
     def __init__(self, ctx, project_dir=None, project_build_dir=None,
@@ -108,6 +112,7 @@ class CMakeProject(object):
         self._stored_config = None
         self._stored_cmake_generator = None
         self._dirty = True
+        self._placeholder_map = {}
         self.load_config()
         self.update_from_initial_config(build_config)
         self.config.name = config_name
@@ -119,9 +124,31 @@ class CMakeProject(object):
         self.config.cmake_toolchain = cmake_toolchain
         self.cmake_install_prefix = self.replace_placeholders(
             self.cmake_install_prefix)
+        self.cmake_config_overrides_cmake_build_type = \
+            self.CMAKE_CONFIG_OVERRIDES_CMAKE_BUILD_TYPE
         # MAYBE:
         # self.cmake_defines = self.replace_placeholders(self.cmake_defines)
         self._dirty = True
+
+    def _make_placeholder_dict(self):
+        username = None
+        for envname in ("USER", "LOGNAME", "USERNAME"):
+            username = os.environ.get(envname)
+            if username:
+                break
+        if not username:
+            username = "nobody"
+
+        placeholders = {
+            "BUILD_CONFIG": self.config.name,
+            "CMAKE_BUILD_TYPE": self.config.cmake_build_type,
+            "CMAKE_PROJECT_DIR": self.project_dir,
+            "CMAKE_PROJECT_BUILD_DIR": self.project_build_dir,
+            "CWD": os.getcwd(),
+            "HOME": os.environ.get("HOME", "__UNKOWN_HOME"),
+            "USER": username,
+        }
+        return placeholders
 
     def reset_dirty(self):
         self._dirty = False
@@ -131,8 +158,12 @@ class CMakeProject(object):
         if not cmake_generator:
             cmake_generator = self.config.cmake_generator
 
+        config_name = self.config.name  # PRESERVE: config.name
+        assert config_name == self._build_config.name
+        self._placeholder_map = {}
         self.load_config()
         self.update_from_initial_config(self._build_config)
+        self.config.name = config_name
         if cmake_generator:
             self.config.cmake_generator = cmake_generator
         if self._stored_cmake_generator and not self._stored_config.cmake_generator:
@@ -144,24 +175,43 @@ class CMakeProject(object):
         return self.project_dir.isdir()
 
     def replace_placeholders(self, value):
+        if not self._placeholder_map:
+            self._placeholder_map = self._make_placeholder_dict()
+        placeholders = self._placeholder_map
+
         if value:
             # -- REPLACE PLACEHOLDERS:
             # pylint: disable=line-too-long
             if isinstance(value, str):
-                value = value.replace("{BUILD_CONFIG}", self.config.name) \
-                         .replace("{CMAKE_BUILD_TYPE}",
-                                  self.config.cmake_build_type) \
-                         .replace("{CMAKE_PROJECT_DIR}", self.project_dir) \
-                         .replace("{CMAKE_PROJECT_BUILD_DIR}", self.project_build_dir) \
-                         .replace("{CWD}", os.getcwd()) \
-                         .replace("{HOME}", os.environ.get("HOME", "__UNKOWN_HOME"))
+                if "{" in value:
+                    try:
+                        new_value = value.format(**placeholders)
+                        value = new_value
+                    except KeyError as e:
+                        print("UNKNOWN-PLACEHOLDER: %s in value: %s" % (e, value))
+                        raise
+
+                # value = value.replace("{BUILD_CONFIG}", self.config.name) \
+                #          .replace("{CMAKE_BUILD_TYPE}",
+                #                   self.config.cmake_build_type) \
+                #          .replace("{CMAKE_PROJECT_DIR}", self.project_dir) \
+                #          .replace("{CMAKE_PROJECT_BUILD_DIR}", self.project_build_dir) \
+                #          .replace("{CWD}", os.getcwd()) \
+                #          .replace("{HOME}", os.environ.get("HOME", "__UNKOWN_HOME"))
             elif isinstance(value, dict):
                 # pylint: disable=redefined-argument-from-local
                 data = value
-                for name, value in data.items():
-                    value2 = self.replace_placeholders(value)
-                    if value2 != value:
-                        data[name] = value
+                for name, item_value in data.items():
+                    new_value = self.replace_placeholders(item_value)
+                    if new_value != item_value:
+                        data[name] = new_value
+                value = data
+            elif isinstance(value, list):
+                data = value
+                for index, item_value in enumerate(data):
+                    new_value = self.replace_placeholders(item_value)
+                    if new_value != item_value:
+                        data[index] = new_value
                 value = data
         return value
 
@@ -194,7 +244,6 @@ class CMakeProject(object):
 
     def _on_config_loaded(self, data):
         """Can be overridden."""
-        pass
 
     def update_from_initial_config(self, build_config):
         """Update :attr:`config` from the :param:`build_config` data."""
@@ -252,7 +301,7 @@ class CMakeProject(object):
             self._stored_config = self.config.copy()
         self.dirty = False
 
-    def make_cmake_init_options(self, cmake_generator=None):
+    def make_cmake_init_options(self, cmake_generator=None, config=None):
         if cmake_generator is None:
             cmake_generator = self.config.cmake_generator
         cmake_toolchain = self.config.cmake_toolchain
@@ -264,6 +313,7 @@ class CMakeProject(object):
                                 generator=cmake_generator,
                                 toolchain=cmake_toolchain,
                                 build_type=self.config.cmake_build_type,
+                                config=config,
                                 install_prefix=cmake_install_prefix)
         return cmdline
 
@@ -293,15 +343,19 @@ class CMakeProject(object):
         """
         # verbose = CMAKE_BUILD_VERBOSE
         # if verbose:
-        #     print("initialized.project_build_dir:     {0} (exists: {1})".format(
-        #         self.project_build_dir.relpath(),
-        #         self.project_build_dir.exists()
-        #     ))
-        #     print("initialized.cmake_build_data_file: {0} (exists: {1})".format(
-        #         self.stored_config_filename.relpath(),
-        #         self.has_stored_config_file()
-        #     ))
+        #     self.diagnose_initialized_problems()
         return self.project_build_dir.exists() and self.has_stored_config_file()
+
+    def diagnose_initialized_problems(self):
+        # pragma: nocover
+        print("initialized.project_build_dir:     {0} (exists: {1})".format(
+            self.project_build_dir.relpath(),
+            self.project_build_dir.exists()
+        ))
+        print("initialized.cmake_build_data_file: {0} (exists: {1})".format(
+            self.stored_config_filename.relpath(),
+            self.has_stored_config_file()
+        ))
 
     def needs_reinit(self):
         """Indicates if the cmake_project.build_dir should be recreated.
@@ -317,15 +371,22 @@ class CMakeProject(object):
         return not self.config.same_as(self._stored_config,
                                        excluded=["cmake_generator"])
 
-    def ensure_init(self, args=None, cmake_generator=None):  # @simplify
+    def needs_conan(self):
+        """Detects if conan is needed."""
+        return any([Path(self.project_dir/conanfile).exists()
+                    for conanfile in ("conanfile.py", "conanfile.txt")])
+
+    def ensure_init(self, args=None, cmake_generator=None, config=None):  # @simplify
+        # pylint: disable=line-too-long, disable=no-else-return
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if self.initialized:
             # -- CASE: cmake_project.build_dir exists and stored_config file exists
+            if config and self.cmake_config_overrides_cmake_build_type:
+                self.config.cmake_build_type = config
             needs_update = self.needs_update()
             needs_reinit = self.needs_reinit()
             if not (needs_reinit or needs_update):
                 # -- CASE: ALREADY DONE w/ same cmake_generator.
-                # pylint: disable=line-too-long
                 print("CMAKE-INIT:  {0} (SKIPPED: Initialized with cmake.generator={1})." \
                       .format(project_build_dir, self.config.cmake_generator))
                 return False
@@ -343,7 +404,8 @@ class CMakeProject(object):
         cmake_generator = cmake_generator or self.config.cmake_generator
         ctx = self.ctx
         self.project_build_dir.makedirs_p()
-        cmake_init_options = self.make_cmake_init_options(cmake_generator)
+        cmake_init_options = self.make_cmake_init_options(cmake_generator,
+                                                          config=config)
         with cd(self.project_build_dir):
             # pylint: disable=line-too-long
             print("CMAKE-INIT:  {0} (using cmake.generator={1})".format(
@@ -353,8 +415,14 @@ class CMakeProject(object):
                 cmake_init_options += " {0}".format(make_args_string(args))
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
             relpath_to_project_dir = posixpath_normpath(relpath_to_project_dir)
+            if self.needs_conan():
+                conan_build_type = config or self.config.cmake_build_type
+                ctx.run("conan install {relpath} -s build_type={build_type}".format(
+                        relpath=relpath_to_project_dir,
+                        build_type=conan_build_type))
             ctx.run("cmake {options} {relpath}".format(
-                options=cmake_init_options, relpath=relpath_to_project_dir))
+                    options=cmake_init_options,
+                    relpath=relpath_to_project_dir))
             print()
 
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
@@ -370,6 +438,7 @@ class CMakeProject(object):
         if self.project_build_dir.isdir():
             project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
             if verbose:
+                # pragma: nocover
                 print("CMAKE-CLEANUP: {0}".format(project_build_dir))
             self.project_build_dir.rmtree_p()
             self._stored_cmake_generator = None
@@ -381,13 +450,14 @@ class CMakeProject(object):
             stored_config_filename.remove()
             self._stored_cmake_generator = self._stored_config.cmake_generator
 
-    def init(self, args=None, cmake_generator=None):
+    def init(self, args=None, cmake_generator=None, config=None):
         """Perform CMake init of the project build directory for this
         build_config.
         """
         if not args:
             args = self.config.cmake_init_args
-        return self.ensure_init(args=args, cmake_generator=cmake_generator)
+        return self.ensure_init(args=args, cmake_generator=cmake_generator,
+                                config=config)
 
     # -- PRELIMINARY PROTOTYPE:
     def update(self, **data):
@@ -419,9 +489,10 @@ class CMakeProject(object):
             self.store_config()
 
     def build(self, args=None, options=None, init_args=None,
-              cmake_generator=None, ensure_init=True,
+              cmake_generator=None, config=None, ensure_init=True,
               target=None, parallel=CMAKE_PARALLEL_UNSET,
               clean_first=False, verbose=False):
+        # pylint: disable=too-many-arguments
         """Triggers the cmake.build step (and delegate to used build-system).
 
         :param args:    List of CMake build args to use (passed to build system).
@@ -439,9 +510,10 @@ class CMakeProject(object):
         cmake_build_options = ""
         options = options or []
         assert isinstance(options, list)
+        if config:
+            options.append("--config {0}".format(config))
         if target:
             options.append("--target {0}".format(target))
-
         if parallel == CMAKE_PARALLEL_UNSET or parallel < 0:
             # -- INHERIT: From last run.
             parallel = self.config.cmake_parallel
@@ -465,7 +537,8 @@ class CMakeProject(object):
 
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if ensure_init:
-            self.ensure_init(args=init_args, cmake_generator=cmake_generator)
+            self.ensure_init(args=init_args, cmake_generator=cmake_generator,
+                             config=config)
         if needs_store_config:
             # -- ENSURE: Initial stored_config is kept after INIT-STEP.
             self.store_config()
@@ -477,14 +550,21 @@ class CMakeProject(object):
                 cmake_build_options, cmake_build_args).strip())
             print()
 
-    def install(self, prefix=None, cmake_generator=None, use_sudo=False):
+    def install(self, prefix=None, cmake_generator=None, config=None,
+                use_sudo=False):
+        # pylint: disable=line-too-long
         # HINT: cmake --build . --target install
         # self.build(cmake_generator=cmake_generator)
         if prefix:
             # -- HINT: May contain placeholders that are replaced.
             prefix = self.replace_placeholders(prefix)
             # DISABLED: self.cmake_install_prefix = prefix
-        self.ensure_init(cmake_generator=cmake_generator)
+
+        cmake_config = ""
+        if config:
+            cmake_config = "--config {0}".format(config)
+
+        self.ensure_init(cmake_generator=cmake_generator, config=config)
 
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         with cd(self.project_build_dir):
@@ -500,16 +580,18 @@ class CMakeProject(object):
 
             # print("CMAKE-INSTALL: {0} (using: CMAKE_INSTALL_PREFIX={1})".format(
             #    project_build_dir, self.cmake_install_prefix))
-            cmake_install_command = "cmake --build . --target install"
-            # cmake_install_command = "cmake --build . -- install"
+            cmake_install = "cmake --build . {0} --target install".format(cmake_config)
+            # cmake_install_command = "cmake --build . {0} -- install".format(cmake_config)
             if use_sudo:
-                self.ctx.sudo(cmake_install_command)
+                self.ctx.sudo(cmake_install)
             else:
-                self.ctx.run(cmake_install_command)
+                self.ctx.run(cmake_install)
             print()
 
-    def pack(self, format=None, package_dir=None, config=None,
-             source_bundle=False, vendor=None, verbose=False):
+    def pack(self, format=None, package_dir=None, cpack_config=None,
+             source_bundle=False, vendor=None, config=None, verbose=False):
+        # pylint: disable=unused-argument   # RELATED-TO: config (PREPARED)
+        # pylint: disable=line-too-long
         """Run cpack command to package:
 
          * source-code archives
@@ -539,12 +621,11 @@ class CMakeProject(object):
         if verbose:
             options.append("--verbose")
         cpack_options = " ".join(options)
-        cpack_config_file = "CPackConfig.cmake"
-        if config:
-            cpack_config_file = config
-        elif source_bundle:
-            # -- CASE: SOURCE-BUNDLE
-            cpack_config_file = "CPackSourceConfig.cmake"
+
+        # -- CPACK-CONFIG OPTION: --config <CPACK_CONFIG_FILE>
+        cpack_config = cpack_config or "CPackConfig.cmake"
+        if source_bundle:
+            cpack_config = "CPackSourceConfig.cmake"
 
         self.ensure_init()
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
@@ -552,10 +633,10 @@ class CMakeProject(object):
             print("CMAKE-PACK: {0} (using cpack.generator={1})".format(
                 project_build_dir, format))
             self.ctx.run("cpack -G {0} --config {1} {2}".format(
-                format, cpack_config_file, cpack_options).strip())
+                format, cpack_config, cpack_options).strip())
 
 
-    def clean(self, args=None, init_args=None):
+    def clean(self, args=None, options=None, init_args=None, config=None):
         """Clean the build artifacts (but: preserve CMake init)"""
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if not self.initialized:
@@ -570,55 +651,64 @@ class CMakeProject(object):
         if args:
             clean_args = make_args_string(args)
             cmake_clean_args = "clean {0}".format(clean_args)
-        with cd(self.project_build_dir):
-            self.ctx.run("cmake --build . -- {0}".format(cmake_clean_args))
 
-    def reinit(self, args=None):
+        options = options or []
+        if config:
+            options.append("--config {0}".format(config))
+        cmake_options = " ".join(options)
+
+        # pylint: disable=line-too-long
+        with cd(self.project_build_dir):
+            self.ctx.run("cmake --build . {0} -- {1}".format(cmake_options, cmake_clean_args))
+
+    def reinit(self, args=None, config=None):
         self.cleanup()
         self.reset_config()
-        self.init(args=args)
+        self.init(args=args, config=config)
 
-    def rebuild(self, args=None, options=None, init_args=None,
+    def rebuild(self, args=None, options=None, init_args=None, config=None,
                 parallel=CMAKE_PARALLEL_UNSET, **kwargs):
         cleanup_build_dir = kwargs.pop("cleanup", False)
         if cleanup_build_dir or self.REBUILD_USE_DEEP_CLEANUP:
             self.cleanup()
 
-        self.clean(init_args=init_args)
+        self.clean(init_args=init_args, config=config)
         self.build(args=args, options=options, ensure_init=True,
-                   parallel=parallel)
+                   config=config, parallel=parallel)
 
-    def redo(self, args=None, options=None, init_args=None, **kwargs):
-        self.reinit(args=init_args)
-        self.rebuild(args=args, options=options, **kwargs)
+    def redo(self, args=None, options=None, init_args=None, config=None, **kwargs):
+        self.reinit(args=init_args, config=config)
+        self.rebuild(args=args, options=options, config=config, **kwargs)
 
-    def ctest(self, args=None, init_args=None, verbose=False):
+    def ctest(self, args=None, init_args=None, config=None, verbose=False):
         """Run ctest on CMake project.
 
         :param args: CTest args to use (as string)
         :param verbose: If true, run tests in verbose mode.
         """
         ctest_args = ""
+        args = args or []
+        if config:
+            args.append("-C {0}".format(config))
         if verbose:
-            args = ["--verbose", args or ""]
-        if args:
-            ctest_args = make_args_string(args)
+            args.insert(0, "--verbose")
+        ctest_args = make_args_string(args)
 
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         self.ensure_init(args=init_args)
         self.project_build_dir.makedirs_p()
         with cd(self.project_build_dir):
             print("CMAKE-TEST:  {0}".format(project_build_dir))
-            self.ctx.run("ctest {0}".format(ctest_args))
+            self.ctx.run("ctest {0}".format(ctest_args).strip())
             print()
 
-    def test(self, args=None, init_args=None, verbose=False):
+    def test(self, args=None, init_args=None, config=None, verbose=False):
         """Run tests of CMake project (by using ctest).
 
         :param args: CTest args to use (as string)
         :param verbose: If true, run tests in verbose mode.
         """
-        self.ctest(args=args, init_args=init_args, verbose=verbose)
+        self.ctest(args=args, init_args=init_args, config=config, verbose=verbose)
 
 
 # ---------------------------------------------------------------------------
@@ -652,6 +742,7 @@ class CMakeProjectWithSyndrome(object):
         print(reason)
 
     # -- PROJECT-COMMAND API:
+    # pylint: disable=unused-argument
     def cleanup(self):
         self.warn("CMAKE-CLEANUP: {0} (SKIPPED: {1})".format(
             self.relpath_to_project_dir(), self.syndrome))
@@ -668,25 +759,37 @@ class CMakeProjectWithSyndrome(object):
         self.warn("CMAKE-CLEAN: {0} (SKIPPED: {1})".format(
             self.relpath_to_project_dir(), self.syndrome))
 
-    def reinit(self, args=None):
+    def reinit(self, args=None, config=None, **kwargs):
         self.cleanup()
-        self.init(args=args)
+        self.init(args=args, config=None)
 
-    def rebuild(self, args=None, init_args=None):
-        self.clean(init_args=init_args)
+    def rebuild(self, args=None, init_args=None, config=None, **kwargs):
+        self.clean(init_args=init_args, config=config)
         self.build(args=args, ensure_init=True)
 
-    def redo(self, args=None, init_args=None):
-        self.reinit(args=init_args)
-        self.rebuild(args=args)
+    def redo(self, args=None, init_args=None, config=None, **kwargs):
+        self.reinit(args=init_args, config=config)
+        self.rebuild(args=args, config=config)
 
-    def ctest(self, args=None, init_args=None):
+    def ctest(self, args=None, init_args=None, config=None, **kwargs):
         # pylint: disable=unused-argument
         self.fail("CMAKE-TEST: {0} (SKIPPED: {1})".format(
             self.relpath_to_project_dir(), self.syndrome))
 
-    def test(self, args=None, init_args=None):
-        self.ctest(args=args, init_args=init_args)
+    def test(self, args=None, init_args=None, config=None, **kwargs):
+        self.ctest(args=args, init_args=init_args, config=config, **kwargs)
+
+    def install(self, **kwargs):
+        self.fail("CMAKE-INSTALL: {0} (SKIPPED: {1})".format(
+            self.relpath_to_project_dir(), self.syndrome))
+
+    def pack(self, **kwargs):
+        self.fail("CMAKE-PACK: {0} (SKIPPED: {1})".format(
+            self.relpath_to_project_dir(), self.syndrome))
+
+    def update(self, **kwargs):
+        self.fail("CMAKE-UPDATE: {0} (SKIPPED: {1})".format(
+            self.relpath_to_project_dir(), self.syndrome))
 
 
 class CMakeProjectWithoutProjectDirectory(CMakeProjectWithSyndrome):
@@ -726,8 +829,8 @@ class CMakeBuildRunner(object):
                     target, posixpath_normpath(cmake_project.project_dir)
                 ))
 
-    def __call__(self, target=None):
-        self.execute_target(target)
+    def __call__(self, target=None, **kwargs):
+        self.execute_target(target, **kwargs)
 
     def set_cmake_generator(self, cmake_generator=None):
         # -- OVERRIDE: cmake_generator
@@ -737,35 +840,43 @@ class CMakeBuildRunner(object):
         for cmake_project in self.cmake_projects:
             cmake_project.config.cmake_generator = cmake_generator
 
-    def run(self, target=None):
-        self.execute_target(target)
+    def run(self, target=None, **kwargs):
+        self.execute_target(target, **kwargs)
 
-    def init(self, args=None):
-        self.execute_target("init", args=args)
+    def init(self, args=None, config=None):
+        self.execute_target("init", args=args, config=config)
 
-    def build(self, args=None, init_args=None):
-        self.execute_target("build", args=args, init_args=init_args)
+    def build(self, args=None, options=None, init_args=None, config=None):
+        self.execute_target("build", args=args, options=options,
+                            init_args=init_args, config=config)
 
-    def test(self, args=None, init_args=None):
-        self.execute_target("test", args=args, init_args=init_args)
+    def test(self, args=None, init_args=None, config=None):
+        self.execute_target("test", args=args, init_args=init_args, config=config)
 
-    def install(self, prefix=None, use_sudo=False):
-        self.execute_target("install", prefix=prefix, use_sudo=use_sudo)
+    def install(self, prefix=None, use_sudo=False, config=None):
+        self.execute_target("install", prefix=prefix, use_sudo=use_sudo,
+                            config=config)
 
-    def pack(self, format=None, package_dir=None, vendor=None, verbose=False):
+    def pack(self, format=None, package_dir=None, cpack_config=None,
+             source_bundle=None, vendor=None, verbose=False, config=None):
         self.execute_target("pack", format=format, package_dir=package_dir,
-                            vendor=vendor, verbose=verbose)
+                            cpack_config=cpack_config,
+                            source_bundle=source_bundle,
+                            vendor=vendor,
+                            config=config,
+                            verbose=verbose)
 
-    def reinit(self, args=None):
+    def reinit(self, args=None, config=None):
         self.execute_target("cleanup")
         self.execute_target("reset_config")
-        self.execute_target("init", args=args)
+        self.execute_target("init", args=args, config=config)
 
-    def rebuild(self, args=None, init_args=None):
-        self.execute_target("rebuild", args=args, init_args=init_args)
+    def rebuild(self, args=None, options=None, init_args=None, config=None):
+        self.execute_target("rebuild", args=args, options=options,
+                            init_args=init_args, config=config)
 
-    def clean(self, args=None):
-        self.execute_target("clean", args=args)
+    def clean(self, args=None, options=None, config=None):
+        self.execute_target("clean", args=args, options=options, config=config)
 
     def cleanup(self):
         self.execute_target("cleanup")

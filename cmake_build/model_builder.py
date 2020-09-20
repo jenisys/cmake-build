@@ -241,7 +241,19 @@ def cmake_select_build_configs(ctx, build_config):
     :return: List of build_config names to use.
     """
     build_configs = [build_config]
-    if build_config == "host_all":
+    alias_value = ctx.config.build_config_aliases.get(build_config)
+    if alias_value:
+        # -- EXPERIMENT: Support build_config_aliases:
+        #   alias_name: sequence<name> or name (as string)
+        if callable(alias_value):
+            generate_names_func = alias_value
+            build_configs = list(generate_names_func())
+        elif isinstance(alias_value, six.string_types):
+            build_configs = [alias_value]
+        else:
+            assert isinstance(alias_value, (list, tuple))
+            build_configs = alias_value
+    elif build_config == "host_all":
         build_configs = HOST_BUILD_CONFIGS_DEFAULT
     elif build_config == "all":
         # -- SPECIAL-CASE BUILD_CONFIG ALIAS: all
@@ -333,6 +345,6 @@ def show_cmake_project_ignored_args(cmake_project_kwargs):
 
     # -- NORMAL CASE:
     for name, value in six.iteritems(cmake_project_kwargs):
-        if value is None:
+        if value is None or not value:
             continue
         print("cmake_project: IGNORED_ARGS: %s=%r" % (name, value))

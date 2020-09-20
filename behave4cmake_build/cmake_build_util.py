@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-
+# pylint: disable=useless-object-inheritance, unused-argument
 from __future__ import absolute_import, print_function
 import os
 from cmake_build import model_builder
@@ -28,13 +28,13 @@ class MockConfig(object):
         self.cmake_toolchain = None
         self.cmake_install_prefix = None
         self.cmake_defines = None
-        # DISABLED: self.build_config = self.build_config_aliases.get("default", "debug")
+        # DISABLED:
+        # self.build_config = self.build_config_aliases.get("default", "debug")
 
     def get(self, name, default=None):
         if name == "build_configs_map":
             return self.build_configs_map
-        else:
-            return self.data.get(name, default)
+        return self.data.get(name, default)
 
     @property
     def build_configs(self):
@@ -79,7 +79,11 @@ def make_cmake_project(ctx, project_dir, build_config=None, **kwargs):
     # build_config_data = make_build_config(ctx, build_config)
     # cmake_project = CMakeProject(ctx, project_dir, build_config=build_config_data)
     # return cmake_project
-    return model_builder.make_cmake_project(ctx, project_dir, build_config=build_config, **kwargs)
+    if not build_config:
+        build_config = os.environ.get("CMAKE_BUILD_CONFIG", None)
+    return model_builder.make_cmake_project(ctx, project_dir,
+                                            build_config=build_config,
+                                            **kwargs)
 
 
 def make_simple_cmake_project(project_dir, build_config=None, **kwargs):
