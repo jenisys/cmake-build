@@ -11,4 +11,5 @@
 # -- HINT: cmake can be installed as python wheel (provide by cmake team).
 # REASON: Many package managers (debian, apt, ...) are rather conservative.
 # BUT:    Developer(s) often need newer versions.
-cmake >= 3.15
+# BETTER: cmake >= 3.18
+cmake >= 3.16

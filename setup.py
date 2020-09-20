@@ -49,7 +49,7 @@ def find_packages_by_root_package(where):
 # -----------------------------------------------------------------------------
 setup(
     name="cmake-build",
-    version="0.1.20",
+    version="0.2.0",
     description="cmake-build is a small wrapper around CMake to simplify its usage as build system",
     long_description=description,
     author="Jens Engel",
@@ -66,10 +66,10 @@ setup(
     # SUPPORT: python2.7, python3.3 (or higher)
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
     install_requires=[
-        "invoke >= 1.2.0",
+        "invoke >= 1.4.0",
         "six >= 1.12.0",
-        "click >= 7.0.0",
         "pycmd",
+        # NOT-NEEDED: "click >= 7.0.0",
         # -- HINT: path.py => path (python-install-package was renamed for python3)
         "path.py >= 11.5.0; python_version <  '3.5'",
         "path >= 13.1.0;    python_version >= '3.5'",
@@ -77,7 +77,7 @@ setup(
     ],
     tests_require=[
         "pytest <  5.0; python_version < '3.0'",
-        "pytest >= 4.0; python_version >= '3.0'",
+        "pytest >= 5.0; python_version >= '3.0'",
         "pytest-html >= 1.19.0",
         "behave >= 1.2.6",
         "PyHamcrest >= 1.9",
@@ -88,7 +88,7 @@ setup(
         'develop': [
             "coverage",
             "pytest <  5.0; python_version < '3.0'",
-            "pytest >= 4.0; python_version >= '3.0'",
+            "pytest >= 5.0; python_version >= '3.0'",
             "pytest-html >= 1.19.0",
             "behave >= 1.2.6",
             "PyHamcrest >= 1.9",

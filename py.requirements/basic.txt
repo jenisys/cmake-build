@@ -8,15 +8,14 @@
 #  * http://www.pip-installer.org/
 # ============================================================================
 
-click >= 7.0.0
-
-invoke >= 1.2.0
+# DISABLED: click >= 7.0.0
+invoke >= 1.4.0
 pycmd
 six >= 1.12.0
 
 # -- HINT: cmake can be installed as python wheel.
 # REASON: Many package managers (debian, apt, ...) are rather conservative.
-# cmake >= 3.13
+# cmake >= 3.18
 
 # -- HINT: path.py => path (python-install-package was renamed for python3)
 path.py >= 11.5.0; python_version <  '3.5'
