@@ -24,7 +24,6 @@ TOP = os.path.join(HERE, "..")
 if os.path.isdir(os.path.join(TOP, NAME)):
     sys.path.insert(0, os.path.abspath(TOP))
 
-
 # ----------------------------------------------------------------------------
 # NORMAL PART:
 # ----------------------------------------------------------------------------
@@ -35,5 +34,8 @@ from cmake_build.program import program
 # AUTO-MAIN:
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    args = " ".join(sys.argv[:1])
+    if "COVERAGE_PROCESS_START" in os.environ:
+        # -- ENABLE: coverage support for cmake-build subprocess(es).
+        import coverage
+        coverage.process_startup()
     sys.exit(program.run())
