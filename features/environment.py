@@ -97,12 +97,7 @@ def cleanup_environment_variables():
     * "CMAKE_*"
     """
     CLEANUP_VARIABLE_NAMES = ["CMAKE_BUILD_CONFIG"]
-    environment_variables_to_cleanup = []
     for name in os.environ.keys():
         if name.startswith("CMAKE_") or (name in CLEANUP_VARIABLE_NAMES):
-            environment_variables_to_cleanup.append(name)
-
-    # checkpoint = "behave.environment"
-    for name in environment_variables_to_cleanup:
-        print("REMOVE ENIRONMENT-VARIABLE: {0}={1}".format(name, os.environ[name]))
-        os.environ.pop(name)
+            print("REMOVE ENVIRONMENT-VARIABLE: {0}={1}".format(name, os.environ[name]))
+            os.environ.pop(name)
