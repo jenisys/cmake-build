@@ -85,9 +85,13 @@ Feature: cmake-build cleanup Command
     And the command output should contain:
       """
       RMTREE: build.debug
+      """
+    And the command output should contain:
+      """
       RMTREE: build.release
       """
     And note that "the directories build.* are cleaned up anyway"
+    And note that "the ORDERING of removed directories is NOT RELEVANT"
     But note that "not a cmake.project is GRACEFULLY IGNORED"
 
 
