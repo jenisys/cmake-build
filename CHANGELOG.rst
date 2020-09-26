@@ -8,6 +8,10 @@ GOALS:
 
 - Drop Python2.7 support.
 
+CHANGES:
+
+- RENAMED: Task "update" was renamed to "configure" (with alias: "update").
+
 
 Release v0.2.0 (2020-09-21)
 -------------------------------------------------------------------------------
