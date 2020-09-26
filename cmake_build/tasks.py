@@ -466,9 +466,9 @@ def pack(ctx, format=None,
         "config": TASK_HELP4PARAM_CMAKE_CONFIG,
         "generator": TASK_HELP4PARAM_CMAKE_GENERATOR,
 })
-def update_config(ctx, define, project="all", build_config=None, config=None,
+def configure(ctx, define, project="all", build_config=None, config=None,
                   generator=None):
-    """Update CMake build_dir configuration for cmake project(s)."""
+    """Configure the CMake build_dir for cmake project(s)."""
     # XXX_TODO: config
     cmake_define_parts = define or []  # List of cmake definitions: NAME=VALUE
     cmake_defines_data = OrderedDict()
@@ -490,7 +490,7 @@ def update_config(ctx, define, project="all", build_config=None, config=None,
                                          build_config=build_config,
                                          generator=generator)
     for cmake_project in cmake_projects:
-        cmake_project.update(**cmake_defines_data)
+        cmake_project.configure(**cmake_defines_data)
 
 
 @task(iterable=["arg", "option"],
@@ -663,7 +663,7 @@ namespace = Collection(redo, init, test, clean, reinit, rebuild, config)
 namespace.add_task(build, default=True)
 namespace.add_task(install)
 namespace.add_task(pack)
-namespace.add_task(update_config)
+namespace.add_task(configure)
 
 
 # pylint: disable=line-too-long

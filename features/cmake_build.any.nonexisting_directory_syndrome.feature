@@ -16,16 +16,16 @@ Feature: CMake Project directory does not exist (Syndrome)
       """
 
     Examples: Failing commands
-      | Command | COMMAND | Outcome |
-      | init    | INIT    | fail    |
-      | build   | BUILD   | fail    |
-      | test    | TEST    | fail    |
-      | install | INSTALL | fail    |
-      | pack    | PACK    | fail    |
-      | rebuild | BUILD   | fail    |
-      | reinit  | INIT    | fail    |
-      | update  | UPDATE  | fail    |
+      | Command   | COMMAND   | Outcome |
+      | init      | INIT      | fail    |
+      | build     | BUILD     | fail    |
+      | test      | TEST      | fail    |
+      | install   | INSTALL   | fail    |
+      | pack      | PACK      | fail    |
+      | rebuild   | BUILD     | fail    |
+      | reinit    | INIT      | fail    |
+      | configure | CONFIGURE | fail    |
 
     Examples: Passing commands
-      | Command | COMMAND | Outcome |
-      | clean   | CLEAN   | pass    |
+      | Command   | COMMAND   | Outcome |
+      | clean     | CLEAN     | pass    |

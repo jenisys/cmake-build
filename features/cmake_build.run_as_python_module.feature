@@ -24,7 +24,7 @@ Feature: Run cmake-build as python module
     And  the command output should contain "pack"
     And  the command output should contain "reinit"
     And  the command output should contain "rebuild"
-    And  the command output should contain "update"
+    And  the command output should contain "configure"
     And  the command output should contain "clean"
     And  the command output should contain "cleanup"
     And  the command output should contain "cleanup.all"

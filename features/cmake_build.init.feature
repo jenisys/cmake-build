@@ -166,7 +166,7 @@ Feature: cmake-build init Command
     Then it should pass with:
       """
       CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE, using cmake.generator=ninja)
-      CMAKE-UPDATE: library_hello/build.debug
+      CMAKE-CONFIGURE: library_hello/build.debug
       """
     And the command output should contain:
       """
@@ -198,7 +198,7 @@ Feature: cmake-build init Command
     Then it should pass with:
       """
       CMAKE-INIT:  library_hello/build.debug (NEEDS-UPDATE, using cmake.generator=ninja)
-      CMAKE-UPDATE: library_hello/build.debug
+      CMAKE-CONFIGURE: library_hello/build.debug
       """
     And the command output should contain:
       """

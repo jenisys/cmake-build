@@ -317,7 +317,7 @@ class CMakeProject(object):
                                 install_prefix=cmake_install_prefix)
         return cmdline
 
-    def make_cmake_update_options(self, **more_defines):
+    def make_cmake_configure_options(self, **more_defines):
         # pylint: disable=line-too-long
         cmake_toolchain = self.config.cmake_toolchain
         cmake_install_prefix = self.replace_placeholders(
@@ -393,7 +393,7 @@ class CMakeProject(object):
             elif needs_update and not needs_reinit:
                 print("CMAKE-INIT:  {0} (NEEDS-UPDATE, using cmake.generator={1})"\
                       .format(project_build_dir, self.config.cmake_generator))
-                self.update()
+                self.configure()
                 return True
 
         # -- CASE: NOT INITIALIZED or NEEDS REINIT
@@ -460,7 +460,7 @@ class CMakeProject(object):
                                 config=config)
 
     # -- PRELIMINARY PROTOTYPE:
-    def update(self, **data):
+    def configure(self, **data):
         """Update CMake project build directory configuration"""
         project_build_dir = posixpath_normpath(self.project_build_dir.relpath())
         if not self.initialized:
@@ -473,13 +473,13 @@ class CMakeProject(object):
 
         # cmake_generator = data.pop("cmake_generator", None)
         # self.ensure_init(cmake_generator=cmake_generator)
-        print("CMAKE-UPDATE: {0}".format(project_build_dir))
+        print("CMAKE-CONFIGURE: {0}".format(project_build_dir))
 
         # more_cmake_defines = OrderedDict(data.items())
         # cmake_options = cmake_cmdline_define_options([], **data)
         # print("XXX cmake_defines: %r" % self.config.cmake_defines)
         # pylint: disable=line-too-long
-        cmake_options = self.make_cmake_update_options(**data)
+        cmake_options = self.make_cmake_configure_options(**data)
         with cd(self.project_build_dir):
             relpath_to_project_dir = self.project_build_dir.relpathto(self.project_dir)
             relpath_to_project_dir = posixpath_normpath(relpath_to_project_dir)
@@ -487,6 +487,10 @@ class CMakeProject(object):
 
             # -- FINALLY: If cmake-init worked, store used cmake_generator.
             self.store_config()
+
+    # -- BACKWARD-COMPATIBLE:
+    # def update(self, **data):
+    #     self.configure(**data)
 
     def build(self, args=None, options=None, init_args=None,
               cmake_generator=None, config=None, ensure_init=True,
@@ -572,9 +576,9 @@ class CMakeProject(object):
             if prefix and prefix != self.cmake_install_prefix:
                 # -- PREPARE: cmake configuration w/ new CMAKE_INSTALL_PREFIX
                 print("CMAKE-INSTALL: Use CMAKE_INSTALL_PREFIX={0}".format(prefix))
-                cmake_update_command = "cmake -DCMAKE_INSTALL_PREFIX={0} {1}".format(
+                cmake_configure_command = "cmake -DCMAKE_INSTALL_PREFIX={0} {1}".format(
                     prefix, posixpath_normpath(self.project_dir.relpath()))
-                self.ctx.run(cmake_update_command)
+                self.ctx.run(cmake_configure_command)
                 self.cmake_install_prefix = prefix
                 # DISABLED: self.store_config()
 
@@ -787,10 +791,14 @@ class CMakeProjectWithSyndrome(object):
         self.fail("CMAKE-PACK: {0} (SKIPPED: {1})".format(
             self.relpath_to_project_dir(), self.syndrome))
 
-    def update(self, **kwargs):
-        self.fail("CMAKE-UPDATE: {0} (SKIPPED: {1})".format(
+    def configure(self, **kwargs):
+        self.fail("CMAKE-CONFIGURE: {0} (SKIPPED: {1})".format(
             self.relpath_to_project_dir(), self.syndrome))
 
+    # -- BACKWARD-COMPATIBLE:
+    # def update(self, **kwargs):
+    #     self.fail("CMAKE-UPDATE: {0} (SKIPPED: {1})".format(
+    #         self.relpath_to_project_dir(), self.syndrome))
 
 class CMakeProjectWithoutProjectDirectory(CMakeProjectWithSyndrome):
     SYNDROME = "cmake.project directory does not exist"

@@ -16,16 +16,16 @@ Feature: Directory is not a CMake Project (Syndrome)
       """
 
     Examples: Failing commands
-      | Command | Outcome |
-      | init    | fail    |
-      | build   | fail    |
-      | test    | fail    |
-      | install | fail    |
-      | pack    | fail    |
-      | rebuild | fail    |
-      | reinit  | fail    |
-      | update  | fail    |
-      | clean   | fail    |
+      | Command   | Outcome |
+      | init      | fail    |
+      | build     | fail    |
+      | test      | fail    |
+      | install   | fail    |
+      | pack      | fail    |
+      | rebuild   | fail    |
+      | reinit    | fail    |
+      | configure | fail    |
+      | clean     | fail    |
 
     Examples: Passing commands
       | Command     | Outcome |
