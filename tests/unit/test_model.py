@@ -56,7 +56,7 @@ def assert_cmake_project_used_reinit_using_captured(cmake_project, captured, cma
     assert_cmake_project_used_init_using_captured(cmake_project, captured, cmake_generator)
 
 
-def assert_cmake_project_used_update_using_captured(cmake_project, captured, cmake_generator=""):
+def assert_cmake_project_needed_update_using_captured(cmake_project, captured, cmake_generator=""):
     build_dir = cmake_project.project_dir.relpathto(cmake_project.project_build_dir)
     assert "CMAKE-INIT:  {0} (NEEDS-UPDATE, using cmake.generator=".format(build_dir) in captured.out
     assert "CMAKE-INIT:  {0} (using cmake.generator={1})".format(build_dir, cmake_generator) in captured.out
@@ -352,5 +352,5 @@ class TestCMakeProject(object):
             assert not cmake_project2.needs_reinit()
             assert not cmake_project2.needs_update()
             captured = capsys.readouterr()
-            assert_cmake_project_used_update_using_captured(cmake_project2, captured,
+            assert_cmake_project_needed_update_using_captured(cmake_project2, captured,
                                                             cmake_generator="ninja")
