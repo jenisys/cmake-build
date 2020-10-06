@@ -1,4 +1,4 @@
-# -*- encoding: UTF-8 -*-
+# -*- coding: UTF-8 -*-
 """
 Workhorse to build the CMake project model elements from parts.
 """
