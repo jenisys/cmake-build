@@ -12,6 +12,8 @@ class MockConfig(object):
         "cmake_install_prefix": None,
         "cmake_defines": [],
         "projects": [],
+        "config_file": None,
+        "config_dir": ".",
         # DISABLED: "build_config_aliases": {"default": "debug"},
     }
 
@@ -28,6 +30,8 @@ class MockConfig(object):
         self.cmake_toolchain = None
         self.cmake_install_prefix = None
         self.cmake_defines = None
+        self.config_file = None
+        self.config_dir = "."
         # DISABLED:
         # self.build_config = self.build_config_aliases.get("default", "debug")
 

@@ -13,9 +13,10 @@ Simple example how invoke.Program can be used in own scripts/commands.
 from __future__ import absolute_import, print_function
 import os
 import sys
+from distutils.util import strtobool
+from pathlib import Path
 from invoke import Program, Collection
 from invoke.config import Config, merge_dicts
-
 
 # ---------------------------------------------------------------------------
 # CONSTANTS:
@@ -68,7 +69,65 @@ class CMakeBuildProgramConfig(Config):
     def __init__(self, **kwargs):
         # -- ENSURE: Can use config="cmake_build.yaml" (via: system_prefix)
         kwargs["system_prefix"] = "./"
+        config_file = self.locate_config_file()
+        kwargs["system_prefix"] = self.select_system_prefix(config_file)
         super(CMakeBuildProgramConfig, self).__init__(**kwargs)
+        self._config_file = config_file
+        if config_file and config_file.parent != Path.cwd():
+            # -- SPECIAL CASE: Disable any projects and store current location
+            # DISABLED: self.load_basedir_config(config_file)
+            self["projects"] = []
+            self["project_location"] = str(Path.cwd())
+
+        # -- REMEMBER: Which config-file is used and where it is.
+        # NEEDED-FOR: Relative path normalization.
+        if config_file:
+            self["config_file"] = str(config_file)
+            self["config_dir"] = str(config_file.parent)
+        else:
+            self["config_file"] = None
+            self["config_dir"] = "."
+
+
+    @classmethod
+    def locate_config_file(cls):
+        """Hunt for config-file in current working directory (cwd) and upword."""
+        cwd = Path.cwd()
+        config_filename = Path("{0}.yaml".format(cls.file_prefix))
+        config_file = cwd/config_filename
+        if config_file.exists():
+            return config_file
+
+        # -- MAYBE: INHERIT CONFIG-FILE FROM BASE DIRECTORY (walk towards root-dir)
+        inherits_config_file = strtobool(
+            os.environ.get("CMAKE_BUILD_INHERIT_CONFIG_FILE", "yes"))
+        if inherits_config_file and not config_file.exists():
+            for base_dir in cwd.parents:
+                config_file = base_dir/config_filename
+                if config_file.exists():
+                    return config_file
+        # -- OTHERWISE: NOT-FOUND
+        return None
+
+    @classmethod
+    def select_system_prefix(cls, config_file=None):
+        if not config_file:
+            config_file = cls.locate_config_file()
+        system_prefix = "."
+        if config_file:
+            config_relpath = os.path.relpath(str(config_file), str(Path.cwd()))
+            parent_relpath = os.path.relpath(str(config_file.parent), str(Path.cwd()))
+            annotation = "as CONFIG"
+            if parent_relpath != ".":
+                annotation = "for DEFAULTS"
+            print("CMAKE-BUILD: Using {0} ({1})".format(config_relpath, annotation))
+            system_prefix = str(config_file.parent)
+            # system_prefix = parent_relpath
+
+        if not system_prefix.endswith("/"):
+            system_prefix = "{0}/".format(system_prefix)
+        # print("SELECT-CONFIG-FILE: system_prefix={0}".format(system_prefix))
+        return system_prefix
 
     @staticmethod
     def global_defaults():

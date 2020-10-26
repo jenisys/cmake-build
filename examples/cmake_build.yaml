@@ -1,5 +1,5 @@
 # ===========================================================================
-# CMAKE-BUILD CONFIGURATION: cmake-build.yaml
+# CMAKE-BUILD CONFIGURATION: cmake_build.yaml
 # ===========================================================================
 # PROJECT: cmake-build/examples/
 # DESCRIPTION:
@@ -15,7 +15,6 @@
 
 cmake_generator: ninja
 build_dir_schema: "build.{BUILD_CONFIG}"
-
 build_config: debug
 build_configs:
   - debug:
@@ -26,6 +25,9 @@ build_configs:
 
   - release:
       cmake_build_type: MinSizeRel
+
+  - multi:
+      cmake_generator: ninja.multi
 
 projects:
   - library_hello

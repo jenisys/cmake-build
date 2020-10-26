@@ -678,6 +678,8 @@ TASKS_CONFIG_DEFAULTS = {
     "build_config_aliases": {}, # HINT: Map string -> sequence<string> (or string/callable)
     "build_configs_map": {},    # -- AVOID-HERE: BUILD_CONFIG_DEFAULT_MAP.copy(),
     "projects": [],
+    "config_file": None,
+    "config_dir": None,
 }
 # pylint: enable=line-too-long
 namespace.configure(TASKS_CONFIG_DEFAULTS)

@@ -103,6 +103,17 @@ def make_build_config(ctx, name=None):
     build_config_data2 = ctx.config.build_configs_map.get(name) or {}
     build_config_data.update(build_config_data2)
 
+    # -- STEP: Make cmake_toolchain path relative to config_dir.
+    config_dir = ctx.config.config_dir or "."
+    cmake_toolchain = build_config_data.get("cmake_toolchain")
+    if cmake_toolchain:
+        # -- ASSUMPTION: cmake_toolchain is a relative-path.
+        cmake_toolchain = Path(cmake_toolchain)
+        if not cmake_toolchain.isabs():
+            cmake_toolchain = Path(config_dir)/cmake_toolchain
+            cmake_toolchain = cmake_toolchain.normpath()
+            build_config_data["cmake_toolchain"] = cmake_toolchain
+
     # -- STEP: build_config.cmake_defines inherits common.cmake_defines
     cmake_defines = build_config_defaults["cmake_defines"]
     cmake_defines_items = cmake_defines_normalize(

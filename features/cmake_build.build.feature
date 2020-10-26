@@ -1,3 +1,4 @@
+@fixture.cmake_build.inherit_config_file.disabled
 Feature: cmake-build build Command
 
   As a cmake build user
@@ -36,6 +37,8 @@ Feature: cmake-build build Command
     And the directory "build.debug" should exist
     And the CMake project is initialized for build_config="debug"
 
+
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: CMake Project (build dir) exists but is not initialized (perform: init before build)
     Given I ensure that the directory "build.debug" exists
     And the CMake project is not initialized
@@ -75,6 +78,7 @@ Feature: cmake-build build Command
       CMAKE-BUILD: build.debug
       """
 
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: CMake Project (build dir) is initialized and should use another cmake.generator (perform: init before build)
     When I successfully run "cmake-build init"
     Then the CMake project is initialized

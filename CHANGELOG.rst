@@ -12,6 +12,38 @@ CHANGES:
 
 - RENAMED: Task "update" was renamed to "configure" (with alias: "update").
 
+Release v0.2.2 (UNRELEASED)
+-------------------------------------------------------------------------------
+
+FEATURES:
+
+* Inherit config-file from parent-directory (towards root-directory)
+  if no config-file exists in local directory.
+
+  REASONS:
+
+  * Allows to perform cmake builds in subdirectory as small, isolated part
+    while reusing build-config settings, like ``cmake_toolchain``, ``cmake_defines``.
+
+  * Supports to provide config-file in parent-directory for a bundle of
+    CMake projects that are checked-out/combined via git-submodules or similar.
+
+
+Release v0.2.1 (2020-09-26)
+-------------------------------------------------------------------------------
+
+FEATURES:
+
+* RENAMED-TASK: Use "configure" now (alias: "update", was old name).
+
+FIXES:
+
+* Fix test regressions related to Python3 (platform: Linux).
+
+BREAKING CHANGES:
+
+* Removed alias "update-config" for "update".
+
 
 Release v0.2.0 (2020-09-21)
 -------------------------------------------------------------------------------

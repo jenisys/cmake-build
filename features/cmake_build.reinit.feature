@@ -22,6 +22,8 @@ Feature: cmake-build reinit Command (without cmake-build config-file)
   Background: Setup CMake Workspace
     Given I use CMake project "examples/library_hello/" to setup a new working directory
 
+
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: CMake Project (build dir) does not exist (new-born)
     Given the directory "build.debug" does not exist
     When I run "cmake-build reinit"
@@ -44,6 +46,7 @@ Feature: cmake-build reinit Command (without cmake-build config-file)
     And note that "cmake.generator=ninja is used per default"
 
 
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: CMake Project build_dir exists and is initialized (recreate it)
     Given I set the environment variable "CMAKE_BUILD_CONFIG" to "release"
     When I run "cmake-build init --generator=make"
@@ -63,6 +66,7 @@ Feature: cmake-build reinit Command (without cmake-build config-file)
     But note that "reinit inherits the cmake.generator (that was used before)"
 
 
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: Existing CMake Project is re-initialized with another cmake.generator
     Given I set the environment variable "CMAKE_BUILD_CONFIG" to "release"
     When I run "cmake-build init --generator=make"
@@ -80,6 +84,7 @@ Feature: cmake-build reinit Command (without cmake-build config-file)
       """
     And the CMake project is initialized with build_config="release"
     But note that "reinit overrides the cmake.generator (that was used before)"
+
 
   Scenario: CMake Project directory does not exist (skip-and-fail)
     Given I use the directory ".." as working directory

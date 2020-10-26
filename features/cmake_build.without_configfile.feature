@@ -16,6 +16,7 @@ Feature: cmake-build without Configuration File
 
 
   @simple_use
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: cmake-build works without cmdline and configfile if CMakeLists.txt file exists
     Given I use the directory "library_hello/" as working directory
     And   a file named "CMakeLists.txt" exists
@@ -37,6 +38,7 @@ Feature: cmake-build without Configuration File
     But note that "I can use cmake-build for any CMake project (unprepared)"
 
 
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario: cmake-build works without configfile if CMakeLists.txt file exists
     Given a file named "library_hello/CMakeLists.txt" exists
     And   a file named "cmake_build.yaml" does not exist
@@ -70,6 +72,7 @@ Feature: cmake-build without Configuration File
 
   @build_config
   @build_config.<BUILD_CONFIG>
+  @fixture.cmake_build.inherit_config_file.disabled
   Scenario Outline: cmake-build works without configfile (case: build-config=<BUILD_CONFIG>)
 
     INTENTION: Support build-config=<BUILD_CONFIG> even when no configfile exists.

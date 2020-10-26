@@ -40,13 +40,16 @@ fixture_registry.update(cmake_build_fixture_registry)
 # -----------------------------------------------------------------------------
 # HOOKS:
 # -----------------------------------------------------------------------------
+# MAYBE: EXCLUDED_ENVIRONMENT_VARIABLES = ["CMAKE_BUILD_INHERIT_CONFIG_FILE"]
+EXCLUDED_ENVIRONMENT_VARIABLES = []
+
 def before_all(context):
     # -- SETUP ACTIVE-TAG MATCHER (with userdata):
     # USE: behave -D browser=safari ...
     setup_active_tag_values(active_tag_value_provider, context.config.userdata)
     setup_python_path()
     setup_command_shell_processors4cmake_build()
-    cleanup_environment_variables(verbose=True)
+    cleanup_environment_variables(verbose=True, excluded=EXCLUDED_ENVIRONMENT_VARIABLES)
 
 
 def before_feature(context, feature):
@@ -95,16 +98,19 @@ def setup_command_shell_processors4cmake_build():
             processor = processor_class()
             Command.POSTPROCESSOR_MAP["cmake-build"].append(processor)
 
-def cleanup_environment_variables(verbose=False):
+def cleanup_environment_variables(verbose=False, excluded=None):
     """Ensure that a clean process/shell environment exists
     without environment variables that cause side effects during tests:
 
     * CMAKE_BUILD_CONFIG
     * "CMAKE_*"
     """
+    excluded = excluded or []
     CLEANUP_VARIABLE_NAMES = ["CMAKE_BUILD_CONFIG"]
-    for name in os.environ.keys():
-        if name.startswith("CMAKE_") or (name in CLEANUP_VARIABLE_NAMES):
+    for name in list(os.environ.keys()):
+        if name in excluded:
+            continue
+        elif name.startswith("CMAKE_") or (name in CLEANUP_VARIABLE_NAMES):
             # env_value = os.environ[name]
             env_value = os.environ.pop(name)
             if verbose:
