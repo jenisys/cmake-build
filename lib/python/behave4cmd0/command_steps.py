@@ -16,7 +16,7 @@ import difflib
 import os
 import shutil
 from behave import given, when, then, step, matchers # pylint: disable=no-name-in-module
-from hamcrest import assert_that, equal_to, is_not
+from hamcrest import assert_that, equal_to, is_not, is_
 from behave4cmd0 import command_shell, command_util, pathutil, textutil
 from behave4cmd0.pathutil import posixpath_normpath
 from behave4cmd0.command_shell_proc import \
@@ -577,3 +577,15 @@ def step_I_remove_the_environment_variable(context, env_name):
     os.environ[env_name] = ""
     del context.environ[env_name]
     del os.environ[env_name]
+
+@given(u'the environment variable "{env_name}" exists')
+@then(u'the environment variable "{env_name}" exists')
+def step_the_environment_variable_exists(context, env_name):
+    env_variable_value = os.environ.get(env_name)
+    assert_that(env_variable_value, is_not(None))
+
+@given(u'the environment variable "{env_name}" does not exist')
+@then(u'the environment variable "{env_name}" does not exist')
+def step_I_set_the_environment_variable_to(context, env_name):
+    env_variable_value = os.environ.get(env_name)
+    assert_that(env_variable_value, is_(None))
