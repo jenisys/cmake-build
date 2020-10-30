@@ -10,8 +10,8 @@
 
 # DISABLED: click >= 7.0.0
 invoke >= 1.4.0
-pycmd
 six >= 1.12.0
+pycmd
 
 # -- HINT: cmake can be installed as python wheel.
 # REASON: Many package managers (debian, apt, ...) are rather conservative.
@@ -22,4 +22,4 @@ path.py >= 11.5.0; python_version <  '3.5'
 path >= 13.1.0;    python_version >= '3.5'
 
 # -- PYTHON2 BACKPORTS:
-pathlib; python_version < '3.4'
+pathlib2; python_version < '3.4'

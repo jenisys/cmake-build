@@ -12,7 +12,7 @@ CHANGES:
 
 - RENAMED: Task "update" was renamed to "configure" (with alias: "update").
 
-Release v0.2.2 (UNRELEASED)
+Release v0.2.2 (2020-10-30)
 -------------------------------------------------------------------------------
 
 FEATURES:
@@ -28,6 +28,7 @@ FEATURES:
   * Supports to provide config-file in parent-directory for a bundle of
     CMake projects that are checked-out/combined via git-submodules or similar.
 
+* UPDATE: invoke_cleanup to silence cleanup warnings for wrong path-type (directory/file).
 
 Release v0.2.1 (2020-09-26)
 -------------------------------------------------------------------------------

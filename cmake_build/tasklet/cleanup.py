@@ -3,10 +3,12 @@
 Provides cleanup tasks for invoke build scripts (as generic invoke tasklet).
 Simplifies writing common, composable and extendable cleanup tasks.
 
-PYTHON PACKAGE REQUIREMENTS:
-* path.py >= 8.2.1  (as path-object abstraction)
+PYTHON PACKAGE DEPENDENCIES:
+
+* path (python >= 3.5) or path.py >= 11.5.0 (as path-object abstraction)
 * pathlib (for ant-like wildcard patterns; since: python > 3.5)
 * pycmd (required-by: clean_python())
+
 
 cleanup task: Add Additional Directories and Files to be removed
 -------------------------------------------------------------------------------
@@ -19,6 +21,8 @@ configuration data:
     # -- FILE: invoke.yaml
     # USE: cleanup.directories, cleanup.files to override current configuration.
     cleanup:
+        # directories: Default directory patterns (can be overwritten).
+        # files:       Default file patterns      (can be ovewritten).
         extra_directories:
             - **/tmp/
         extra_files:
@@ -39,12 +43,13 @@ EXAMPLE::
     # -- FILE: tasks/docs.py
     from __future__ import absolute_import
     from invoke import task, Collection
-    from tasklet_cleanup import cleanup_tasks, cleanup_dirs
+    from invoke_cleanup import cleanup_tasks, cleanup_dirs
 
     @task
-    def clean(ctx, dry_run=False):
+    def clean(ctx):
         "Cleanup generated documentation artifacts."
-        cleanup_dirs(["build/docs"])
+        dry_run = ctx.config.run.dry
+        cleanup_dirs(["build/docs"], dry_run=dry_run)
 
     namespace = Collection(clean)
     ...
@@ -55,65 +60,64 @@ EXAMPLE::
 """
 
 from __future__ import absolute_import, print_function
-import os.path
+import os
 import sys
-import pathlib
 from invoke import task, Collection
 from invoke.executor import Executor
 from invoke.exceptions import Exit, Failure, UnexpectedExit
+from invoke.util import cd
 from path import Path
+
+# -- PYTHON BACKWARD COMPATIBILITY:
+python_version = sys.version_info[:2]
+python35 = (3, 5)   # HINT: python3.8 does not raise OSErrors.
+if python_version < python35:   # noqa
+    import pathlib2 as pathlib
+else:
+    import pathlib              # noqa
+
+
+# -----------------------------------------------------------------------------
+# CONSTANTS:
+# -----------------------------------------------------------------------------
+VERSION = "0.3.6"
 
 
 # -----------------------------------------------------------------------------
 # CLEANUP UTILITIES:
 # -----------------------------------------------------------------------------
-# def cleanup_accept_old_config(ctx):
-#     if "clean" in ctx.config:
-#         ctx.config.cleanup.directories.extend(ctx.config.clean.directories or [])
-#         ctx.config.cleanup.extra_directories.extend(ctx.config.clean.extra_directories or [])
-#         ctx.config.cleanup.files.extend(ctx.config.clean.files or [])
-#         ctx.config.cleanup.extra_files.extend(ctx.config.clean.extra_files or [])
-#
-#     if "clean_all" in ctx.config:
-#         ctx.config.cleanup_all.directories.extend(ctx.config.clean_all.directories or [])
-#         ctx.config.cleanup_all.extra_directories.extend(ctx.config.clean_all.extra_directories or [])
-#         ctx.config.cleanup_all.files.extend(ctx.config.clean_all.files or [])
-#         ctx.config.cleanup_all.extra_files.extend(ctx.config.clean_all.extra_files or [])
-#
-
-def execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=False):
+def execute_cleanup_tasks(ctx, cleanup_tasks, workdir=".", verbose=False):
     """Execute several cleanup tasks as part of the cleanup.
-
-    REQUIRES: ``clean(ctx, dry_run=False)`` signature in cleanup tasks.
 
     :param ctx:             Context object for the tasks.
     :param cleanup_tasks:   Collection of cleanup tasks (as Collection).
-    :param dry_run:         Indicates dry-run mode (bool)
     """
     # pylint: disable=redefined-outer-name
     executor = Executor(cleanup_tasks, ctx.config)
     failure_count = 0
-    for cleanup_task in cleanup_tasks.tasks:
-        try:
-            print("CLEANUP TASK: %s" % cleanup_task)
-            executor.execute((cleanup_task, dict(dry_run=dry_run)))
-        except (Exit, Failure, UnexpectedExit) as e:
-            print(e)
-            print("FAILURE in CLEANUP TASK: %s (GRACEFULLY-IGNORED)" % cleanup_task)
-            failure_count += 1
+    with cd(workdir) as cwd:
+        for cleanup_task in cleanup_tasks.tasks:
+            try:
+                print("CLEANUP TASK: %s" % cleanup_task)
+                executor.execute(cleanup_task)
+            except (Exit, Failure, UnexpectedExit) as e:
+                print(e)
+                print("FAILURE in CLEANUP TASK: %s (GRACEFULLY-IGNORED)" % cleanup_task)
+                failure_count += 1
 
     if failure_count:
         print("CLEANUP TASKS: %d failure(s) occured" % failure_count)
 
 
-def cleanup_dirs(patterns, dry_run=False, workdir="."):
+def cleanup_dirs(patterns, workdir=".", dry_run=False, verbose=False, show_skipped=False):
     """Remove directories (and their contents) recursively.
     Skips removal if directories does not exist.
 
     :param patterns:    Directory name patterns, like "**/tmp*" (as list).
-    :param dry_run:     Dry-run mode indicator (as bool).
     :param workdir:     Current work directory (default=".")
+    :param dry_run:     Dry-run mode indicator (as bool).
     """
+    show_skipped = show_skipped or verbose
     current_dir = Path(workdir)
     python_basedir = Path(Path(sys.executable).dirname()).joinpath("..").abspath()
     warn2_counter = 0
@@ -121,38 +125,43 @@ def cleanup_dirs(patterns, dry_run=False, workdir="."):
         for directory in path_glob(dir_pattern, current_dir):
             directory2 = directory.abspath()
             if sys.executable.startswith(directory2):
+                # -- PROTECT VIRTUAL ENVIRONMENT (currently in use):
                 # pylint: disable=line-too-long
                 print("SKIP-SUICIDE: '%s' contains current python executable" % directory)
                 continue
             elif directory2.startswith(python_basedir):
-                # -- PROTECT CURRENTLY USED VIRTUAL ENVIRONMENT:
-                if warn2_counter <= 4:
+                # -- PROTECT VIRTUAL ENVIRONMENT (currently in use):
+                # HINT: Limit noise in DIAGNOSTIC OUTPUT to X messages.
+                if warn2_counter <= 4:  # noqa
                     print("SKIP-SUICIDE: '%s'" % directory)
                 warn2_counter += 1
                 continue
 
             if not directory.isdir():
-                print("RMTREE: %s (SKIPPED: Not a directory)" % directory)
+                if show_skipped:
+                    print("RMTREE: %s (SKIPPED: Not a directory)" % directory)
                 continue
 
             if dry_run:
                 print("RMTREE: %s (dry-run)" % directory)
             else:
-                print("RMTREE: %s" % directory)
                 try:
+                    # -- MAYBE: directory.rmtree(ignore_errors=True)
+                    print("RMTREE: %s" % directory)
                     directory.rmtree_p()
-                except (os.error, OSError) as e:
-                    print("%s: %s" % (e.__class__.__name__, e))
+                except OSError as e:
+                    print("RMTREE-FAILED: %s (for: %s)" % (e, directory))
 
 
-def cleanup_files(patterns, dry_run=False, workdir="."):
+def cleanup_files(patterns, workdir=".", dry_run=False, verbose=False, show_skipped=False):
     """Remove files or files selected by file patterns.
     Skips removal if file does not exist.
 
     :param patterns:    File patterns, like "**/*.pyc" (as list).
-    :param dry_run:     Dry-run mode indicator (as bool).
     :param workdir:     Current work directory (default=".")
+    :param dry_run:     Dry-run mode indicator (as bool).
     """
+    show_skipped = show_skipped or verbose
     current_dir = Path(workdir)
     python_basedir = Path(Path(sys.executable).dirname()).joinpath("..").abspath()
     error_message = None
@@ -160,10 +169,11 @@ def cleanup_files(patterns, dry_run=False, workdir="."):
     for file_pattern in patterns:
         for file_ in path_glob(file_pattern, current_dir):
             if file_.abspath().startswith(python_basedir):
-                # -- PROTECT CURRENTLY USED VIRTUAL ENVIRONMENT:
+                # -- PROTECT VIRTUAL ENVIRONMENT (currently in use):
                 continue
             if not file_.isfile():
-                print("REMOVE: %s (SKIPPED: Not a file)" % file_)
+                if show_skipped:
+                    print("REMOVE: %s (SKIPPED: Not a file)" % file_)
                 continue
 
             if dry_run:
@@ -178,7 +188,7 @@ def cleanup_files(patterns, dry_run=False, workdir="."):
                     error_count += 1
                     if not error_message:
                         error_message = message
-    if False and error_message:
+    if False and error_message: # noqa
         class CleanupError(RuntimeError):
             pass
         raise CleanupError(error_message)
@@ -191,89 +201,108 @@ def path_glob(pattern, current_dir=None):
     :param current_dir:  Current working directory (as Path, pathlib.Path, str)
     :return Resolved Path (as path.Path).
     """
-    if not current_dir:
+    if not current_dir: # noqa
         current_dir = pathlib.Path.cwd()
     elif not isinstance(current_dir, pathlib.Path):
         # -- CASE: string, path.Path (string-like)
         current_dir = pathlib.Path(str(current_dir))
 
-    try:
-        for p in current_dir.glob(pattern):
-            yield Path(str(p))
-    except OSError as e:
-        # -- CORNER-CASE 1: x.glob(pattern) may fail with:
-        # OSError: [Errno 13] Permission denied: <filename>
-        # HINT: Directory lacks excutable permissions for traversal.
-        # -- CORNER-CASE 2: symlinked endless loop
-        # OSError: [Errno 62] Too many levels of symbolic links: <filename>
-        print("{0}: {1}".format(e.__class__.__name__, e))
+    pattern_path = Path(pattern)
+    if pattern_path.isabs():
+        # -- SPECIAL CASE: Path.glob() only supports relative-path(s) / pattern(s).
+        if pattern_path.isdir():
+            yield pattern_path
+        return
+
+    # -- HINT: OSError is no longer raised in pathlib2 or python35.pathlib
+    # try:
+    for p in current_dir.glob(pattern):
+        yield Path(str(p))
+    # except OSError as e:
+    #     # -- CORNER-CASE 1: x.glob(pattern) may fail with:
+    #     # OSError: [Errno 13] Permission denied: <filename>
+    #     # HINT: Directory lacks excutable permissions for traversal.
+    #     # -- CORNER-CASE 2: symlinked endless loop
+    #     # OSError: [Errno 62] Too many levels of symbolic links: <filename>
+    #     print("{0}: {1}".format(e.__class__.__name__, e))
 
 
 # -----------------------------------------------------------------------------
 # GENERIC CLEANUP TASKS:
 # -----------------------------------------------------------------------------
-@task
-def clean(ctx, dry_run=False):
+@task(help={
+    "workdir": "Directory to clean(up) (default: $CWD).",
+    "verbose": "Enable verbose mode (default: OFF).",
+})
+def clean(ctx, workdir=".", verbose=False):
     """Cleanup temporary dirs/files to regain a clean state."""
-    # DISABLED: cleanup_accept_old_config(ctx)
-    directories = ctx.config.cleanup.directories or []
+    dry_run = ctx.config.run.dry
+    directories = list(ctx.config.cleanup.directories or [])
     directories.extend(ctx.config.cleanup.extra_directories or [])
-    files = ctx.config.cleanup.files or []
+    files = list(ctx.config.cleanup.files or [])
     files.extend(ctx.config.cleanup.extra_files or [])
 
     # -- PERFORM CLEANUP:
-    execute_cleanup_tasks(ctx, cleanup_tasks, dry_run=dry_run)
-    cleanup_dirs(directories, dry_run=dry_run)
-    cleanup_files(files, dry_run=dry_run)
+    execute_cleanup_tasks(ctx, cleanup_tasks)
+    cleanup_dirs(directories, workdir=workdir, dry_run=dry_run, verbose=verbose)
+    cleanup_files(files, workdir=workdir, dry_run=dry_run, verbose=verbose)
 
+    # -- CONFIGURABLE EXTENSION-POINT:
     # use_cleanup_python = ctx.config.cleanup.use_cleanup_python or False
     # if use_cleanup_python:
-    #     clean_python(ctx, dry_run=dry_run)
+    #     clean_python(ctx)
 
 
-@task(name="all", aliases=("distclean",))
-def clean_all(ctx, dry_run=False):
+@task(name="all", aliases=("distclean",),
+      help={
+        "workdir": "Directory to clean(up) (default: $CWD).",
+        "verbose": "Enable verbose mode (default: OFF).",
+})
+def clean_all(ctx, workdir=".", verbose=False):
     """Clean up everything, even the precious stuff.
     NOTE: clean task is executed last.
     """
-    # DISABLED: cleanup_accept_old_config(ctx)
-    directories = ctx.config.cleanup_all.directories or []
+    dry_run = ctx.config.run.dry
+    directories = list(ctx.config.cleanup_all.directories or [])
     directories.extend(ctx.config.cleanup_all.extra_directories or [])
-    files = ctx.config.cleanup_all.files or []
+    files = list(ctx.config.cleanup_all.files or [])
     files.extend(ctx.config.cleanup_all.extra_files or [])
 
     # -- PERFORM CLEANUP:
     # HINT: Remove now directories, files first before cleanup-tasks.
-    cleanup_dirs(directories, dry_run=dry_run)
-    cleanup_files(files, dry_run=dry_run)
-    execute_cleanup_tasks(ctx, cleanup_all_tasks, dry_run=dry_run)
-    clean(ctx, dry_run=dry_run)
+    cleanup_dirs(directories, workdir=workdir, dry_run=dry_run, verbose=verbose)
+    cleanup_files(files, workdir=workdir, dry_run=dry_run, verbose=verbose)
+    execute_cleanup_tasks(ctx, cleanup_all_tasks)
+    clean(ctx, workdir=workdir, verbose=verbose)
 
-    # use_cleanup_python = ctx.config.cleanup_all.use_cleanup_python or False
-    # if use_cleanup_python:
-    #     clean_python(ctx, dry_run=dry_run)
+    # -- CONFIGURABLE EXTENSION-POINT:
+    # use_cleanup_python1 = ctx.config.cleanup.use_cleanup_python or False
+    # use_cleanup_python2 = ctx.config.cleanup_all.use_cleanup_python or False
+    # if use_cleanup_python2 and not use_cleanup_python1:
+    #     clean_python(ctx)
 
 
-@task(name="python")
-def clean_python(ctx, dry_run=False):
+@task(aliases=["python"])
+def clean_python(ctx, workdir=".", verbose=False):
     """Cleanup python related files/dirs: *.pyc, *.pyo, ..."""
+    dry_run = ctx.config.run.dry or False
     # MAYBE NOT: "**/__pycache__"
     cleanup_dirs(["build", "dist", "*.egg-info", "**/__pycache__"],
-                 dry_run=dry_run)
+                 workdir=workdir, dry_run=dry_run, verbose=verbose)
     if not dry_run:
         ctx.run("py.cleanup")
-    cleanup_files(["**/*.pyc", "**/*.pyo", "**/*$py.class"], dry_run=dry_run)
+    cleanup_files(["**/*.pyc", "**/*.pyo", "**/*$py.class"],
+                  workdir=workdir, dry_run=dry_run, verbose=verbose)
 
 
 @task(help={
     "path": "Path to cleanup.",
     "interactive": "Enable interactive mode.",
     "force": "Enable force mode.",
-    "dry-run": "Enable dry-run mode.",
     "options": "Additional git-clean options",
 })
-def git_clean(ctx, path=None, interactive=True, force=False, dry_run=False,
-              options=None):
+def git_clean(ctx, path=None, interactive=False, force=False,
+              dry_run=False, options=None):
     """Perform git-clean command to cleanup the worktree of a git repository.
 
     BEWARE: This may remove any precious files that are not checked in.
@@ -281,8 +310,9 @@ def git_clean(ctx, path=None, interactive=True, force=False, dry_run=False,
     """
     args = []
     force = force or ctx.config.git_clean.force
-    dry_run = dry_run or ctx.config.git_clean.dry_run
     path = path or ctx.config.git_clean.path or "."
+    interactive = interactive or ctx.config.git_clean.interactive
+    dry_run = dry_run or ctx.config.run.dry or ctx.config.git_clean.dry_run
 
     if interactive:
         args.append("--interactive")
@@ -317,20 +347,17 @@ namespace.add_task(clean, default=True)
 namespace.add_task(git_clean)
 namespace.configure({
     "cleanup": make_cleanup_config(
-        files=["*.bak", "*.log", "*.tmp", "**/.DS_Store", "**/*.~*~"],
+        files=["**/*.bak", "**/*.log", "**/*.tmp", "**/.DS_Store"],
     ),
     "cleanup_all": make_cleanup_config(
         directories=[".venv*", ".tox", "downloads", "tmp"],
     ),
     "git_clean": {
         "interactive": True,
-        "dry_run": False,
         "force": False,
         "path": ".",
+        "dry_run": False,
     },
-    # -- BACKWARD-COMPATIBLE: OLD-STYLE
-    # DISABLED: "clean":     CLEANUP_EMPTY_CONFIG.copy(),
-    # DISABLED: "clean_all": CLEANUP_EMPTY_CONFIG.copy(),
 })
 
 
@@ -354,6 +381,8 @@ def config_add_cleanup_files(files):
     # pylint: disable=protected-access
     the_cleanup_files = namespace._configuration["cleanup"]["files"]
     the_cleanup_files.extend(files)
+    # namespace.configure({"cleanup": {"files": files}})
+    # print("DIAG cleanup.config.cleanup: %r" % namespace.configuration())
 
 def config_add_cleanup_all_dirs(directories):
     # pylint: disable=protected-access

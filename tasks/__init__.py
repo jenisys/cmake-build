@@ -37,7 +37,7 @@ from invoke.util import cd
 
 # -- TASK-LIBRARY:
 # from . import clean
-from . import _tasklet_cleanup as cleanup
+from . import invoke_cleanup as cleanup
 from . import test
 from cmake_build import tasks as cmake_build
 # DISABLED: from . import docs
@@ -70,8 +70,6 @@ def cmake_examples(ctx, build_config=None):
 # TASK CONFIGURATION:
 # -----------------------------------------------------------------------------
 namespace = Collection()
-# DISABLED: namespace.add_task(clean.clean)
-# DISABLED: namespace.add_task(clean.clean_all)
 namespace.add_collection(Collection.from_module(cleanup), name="cleanup")
 namespace.add_task(init)
 namespace.add_task(reinit)
