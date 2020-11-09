@@ -12,6 +12,15 @@ CHANGES:
 
 - RENAMED: Task "update" was renamed to "configure" (with alias: "update").
 
+
+Release v0.2.3 (UNRELEASED)
+-------------------------------------------------------------------------------
+
+FEATURES:
+
+* cleanup: Add support for "excluded_directories" in cleanup, cleanup.all tasks.
+
+
 Release v0.2.2 (2020-10-30)
 -------------------------------------------------------------------------------
 

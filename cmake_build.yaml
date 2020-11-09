@@ -44,6 +44,9 @@ cleanup:
     - "reports"
     - "__WORKDIR__"
 
+  excluded_directories:
+    - "example/PRECIOUS_DIR"
+
 cleanup_all:
   extra_directories:
     - "**/build.*"
@@ -51,3 +54,6 @@ cleanup_all:
     - .pytest_cache
     - .tox
     - .venv*
+
+  excluded_directories:
+    - "example/PRECIOUS_DIR2"
