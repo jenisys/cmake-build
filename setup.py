@@ -49,7 +49,7 @@ def find_packages_by_root_package(where):
 # -----------------------------------------------------------------------------
 setup(
     name="cmake-build",
-    version="0.2.2",
+    version="0.2.3",
     description="cmake-build is a small wrapper around CMake to simplify its usage as build system",
     long_description=description,
     author="Jens Engel",
@@ -97,8 +97,7 @@ setup(
             "pylint",
         ],
     },
-    # MAYBE-DISABLE: use_2to3
-    use_2to3= bool(python_version >= 3.0),
+    # DISABLED: use_2to3= bool(python_version >= 3.0),
     license="BSD",
     classifiers=[
         "Development Status :: 4 - Beta",
