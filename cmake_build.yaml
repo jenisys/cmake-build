@@ -39,6 +39,8 @@ cleanup:
     - "examples/library_hello/build.*"
     - "examples/program_hello/build"
     - "examples/library_hello/build"
+    - "examples/build.*"
+    - "examples/build"
     - "build"
     - "dist"
     - "reports"
@@ -50,6 +52,7 @@ cleanup:
 cleanup_all:
   extra_directories:
     - "**/build.*"
+    - .direnv
     - .hypothesis
     - .pytest_cache
     - .tox

@@ -24,7 +24,12 @@ build_dir_schema: "build.{BUILD_CONFIG}"
 
 build_config: debug
 build_configs:
-  - debug
+  - debug:
+      # cmake_build_type: Debug
+      # cmake_toolchain: cmake/toolchain/XXX.cmake
+      cmake_defines:
+        - BUILD_TESTING: on
+
   - release:
       cmake_build_type: MinSizeRel
 
@@ -32,20 +37,34 @@ projects:
   - examples/library_hello
   - examples/program_hello
 
-
 cleanup:
-    extra_directories:
-      - "build"
-      - "dist"
-      - "__WORKDIR__"
-      - "examples/program_hello/build*"
-      - "examples/library_hello/build*"
-      - reports
+  extra_directories:
+    - "examples/program_hello/build.*"
+    - "examples/library_hello/build.*"
+    - "examples/program_hello/build"
+    - "examples/library_hello/build"
+    - "examples/build.*"
+    - "examples/build"
+    - "build"
+    - "dist"
+    - "reports"
+    - "__WORKDIR__"
+
+  excluded_directories:
+    - "example/PRECIOUS_DIR"
 
 cleanup_all:
-    extra_directories:
-      - .hypothesis
-      - .pytest_cache
+  extra_directories:
+    - "**/build.*"
+    - .direnv
+    - .hypothesis
+    - .pytest_cache
+    - .tox
+    - .venv*
+
+  excluded_directories:
+    - "example/PRECIOUS_DIR2"
+
 
 behave_test:
     scopes:

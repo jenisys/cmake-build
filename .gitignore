@@ -13,6 +13,8 @@ _build/
 build*/
 /reports/
 .cache/
+.direnv/
+.fleet/
 .idea/
 .pytest_cache/
 .tox/
