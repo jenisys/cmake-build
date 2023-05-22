@@ -66,14 +66,16 @@ setup(
     # SUPPORT: python2.7, python3.3 (or higher)
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
     install_requires=[
-        "invoke >= 1.4.0",
-        "six >= 1.12.0",
+        "invoke >= 1.7.0",
+        "six >= 1.16.0",
         "pycmd",
+        # DISABLED: "git+https://github.com/jenisys/invoke-cleanup@v0.3.7",
         # NOT-NEEDED: "click >= 7.0.0",
         # -- HINT: path.py => path (python-install-package was renamed for python3)
         "path.py >= 11.5.0; python_version <  '3.5'",
         "path >= 13.1.0;    python_version >= '3.5'",
-        "pathlib; python_version < '3.4'",
+        "pathlib2; python_version < '3.4'",
+        # MAYBE: "backports.shutil_which; python_version <= '3.3'",
     ],
     tests_require=[
         "pytest <  5.0; python_version < '3.0'",
@@ -91,8 +93,9 @@ setup(
             "pytest >= 5.0; python_version >= '3.0'",
             "pytest-html >= 1.19.0",
             "behave >= 1.2.6",
+            # DISABLED: "git+https://github.com/behave/behave@v1.2.7.dev3",
             "PyHamcrest >= 1.9",
-            "tox",
+            "tox < 4.0",
             "modernize >= 0.5",
             "pylint",
         ],
