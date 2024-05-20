@@ -13,15 +13,30 @@ Simple example how invoke.Program can be used in own scripts/commands.
 from __future__ import absolute_import, print_function
 import os
 import sys
-from distutils.util import strtobool
 from pathlib import Path
 from invoke import Program, Collection
 from invoke.config import Config, merge_dicts
+
 
 # ---------------------------------------------------------------------------
 # CONSTANTS:
 # ---------------------------------------------------------------------------
 USE_PYTHON_CLEANUP = os.environ.get("CMAKE_BUILD_CLEANUP_PYTHON", "no") == "yes"
+TRUE_VALUES = ("y", "yes", "true", "on", "1")
+FALSE_VALUES = ("n", "no", "false", "off", "0")
+
+
+# ---------------------------------------------------------------------------
+# CMAKE-BUILD TASK HELPER:
+# ---------------------------------------------------------------------------
+def parse_bool(text):
+    text = text.strip().lower()
+    if text in TRUE_VALUES:
+        return True
+    if text in FALSE_VALUES:
+        return False
+    # -- OTHERWISE:
+    raise ValueError(text)
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +114,7 @@ class CMakeBuildProgramConfig(Config):
             return config_file
 
         # -- MAYBE: INHERIT CONFIG-FILE FROM BASE DIRECTORY (walk towards root-dir)
-        inherits_config_file = strtobool(
+        inherits_config_file = parse_bool(
             os.environ.get("CMAKE_BUILD_INHERIT_CONFIG_FILE", "yes"))
         if inherits_config_file and not config_file.exists():
             for base_dir in cwd.parents:
