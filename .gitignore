@@ -22,3 +22,5 @@ build*/
 .vscode/
 .DS_Store
 .coverage
+
+rerun*.txt

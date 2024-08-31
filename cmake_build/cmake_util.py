@@ -11,6 +11,9 @@ from collections import OrderedDict
 from path import Path
 import six
 
+from cmake_build._path import monkeypatch_path_if_needed
+monkeypatch_path_if_needed()
+
 
 # -----------------------------------------------------------------------------
 # CMAKE PROJECT CONFIGURATION:

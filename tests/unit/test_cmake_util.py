@@ -255,4 +255,4 @@ def test_cmake_cmdline__with_args_and_defines(args, defines):
 
 
 def test_cmake_cmdline__with_all():
-    return NotImplemented
+    _ = NotImplemented
