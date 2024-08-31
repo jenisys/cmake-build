@@ -13,6 +13,20 @@ CHANGES:
 - RENAMED: Task "update" was renamed to "configure" (with alias: "update").
 
 
+Release v0.2.4 (UNRELEASED)
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* path: Never version dropped support for some API methods.
+  Monkey-patch them in if needed.
+
+DEVELOP:
+
+* UPDATE: Use behave v1.2.7.dev5
+* UPDATE: Use behave4cmd0 v1.2.7.dev6 (and remove local copy).
+
+
 Release v0.2.3 (UNRELEASED)
 -------------------------------------------------------------------------------
 

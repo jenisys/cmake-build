@@ -8,5 +8,9 @@ pytest <  5.0; python_version < '3.0'
 pytest >= 5.0; python_version >= '3.0'
 pytest-html >= 1.19.0
 PyHamcrest >= 1.9
-behave >= 1.2.6
+# -- DISABLED: behave >= 1.2.6
+# OR: git+https://github.com/behave/behave@v1.2.7.dev5
+behave @ git+https://github.com/behave/behave.git@v1.2.7.dev5
+behave4cmd0 @ git+https://github.com/behave/behave4cmd0.git@v1.2.7.dev6
+
 # MAYBE: mock  >= 2.0

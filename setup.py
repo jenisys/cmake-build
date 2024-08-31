@@ -49,7 +49,7 @@ def find_packages_by_root_package(where):
 # -----------------------------------------------------------------------------
 setup(
     name="cmake-build",
-    version="0.2.4.dev0",
+    version="0.2.4.dev1",
     description="cmake-build is a small wrapper around CMake to simplify its usage as build system",
     long_description=description,
     author="Jens Engel",
@@ -81,7 +81,9 @@ setup(
         "pytest <  5.0; python_version < '3.0'",
         "pytest >= 5.0; python_version >= '3.0'",
         "pytest-html >= 1.19.0",
-        "behave >= 1.2.6",
+        # -- DISABLED: "behave >= 1.2.6",
+        "behave @ git+https://github.com/behave/behave.git@v1.2.7.dev5",
+        "behave4cmd0 @ git+https://github.com/behave/behave4cmd0.git@v1.2.7.dev6"
         "PyHamcrest >= 1.9",
         # PREPARED: "mock >= 2.0",
     ],
