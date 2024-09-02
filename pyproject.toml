@@ -1,0 +1,184 @@
+# =============================================================================
+# PACKAGE: cmake-build
+# =============================================================================
+# SPDX-License-Identifier: BSD-2-Clause
+# DESCRIPTION:
+#   Provides a "pyproject.toml" for packaging usecases of this package.
+#
+# REASONS:
+#   * Python project will need a "pyproject.toml" soon to be installable with "pip".
+#   * Currently, duplicates information from "setup.py" here.
+#   * "setup.py" is kept until Python 2.7 support is dropped
+#   * "setup.py" is sometimes needed in some weird cases (old pip version, ...)
+#
+# SEE ALSO:
+#   * https://packaging.python.org/en/latest/tutorials/packaging-projects/
+#   * https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+#   * https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/
+#
+# RELATED: Project-Metadata Schema
+#   * https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+#   * https://packaging.python.org/en/latest/specifications/core-metadata/
+#   * https://pypi.org/classifiers/
+#   * https://spdx.org/licenses/preview/
+#
+# PEPs: https://peps.python.org/pep-XXXX/
+#   * PEP 508 – Dependency specification for Python Software Packages
+#   * PEP 621 – Storing project metadata in pyproject.toml => CURRENT-SPEC: declaring-project-metadata
+#   * PEP 631 – Dependency specification in pyproject.toml based on PEP 508
+#   * PEP 639 – Improving License Clarity with Better Package Metadata
+# =============================================================================
+# MAYBE: requires = ["setuptools", "setuptools-scm"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cmake-build"
+authors = [
+    {name = "Jens Engel", email = "jenisys@noreply.github.com"},
+]
+maintainers = [
+    {name = "Jens Engel", email = "jenisys@noreply.github.com"},
+]
+description = "cmake-build is a small wrapper around CMake to simplify its usage as build system"
+readme = "README.rst"
+requires-python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+keywords = [ # XXX
+    "BDD", "behavior-driven-development", "bdd-framework",
+    "behave", "gherkin", "cucumber-like"
+]
+license = {text = "BSD-2-Clause"}
+# DISABLED: license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Framework :: Invoke",
+    "Framework :: CMake",   # USING: CMake <https://cmake.org>
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",  # FOR: Intended Audience
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Build Tools :: CMake",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "invoke >= 1.7.0",
+    "six >= 1.16.0",
+    "pycmd",
+    # DISABLED: "git+https://github.com/jenisys/invoke-cleanup@v0.3.7",
+    # NOT-NEEDED: "click >= 7.0.0",
+    # -- HINT: path.py => path (python-install-package was renamed for python3)
+    "path.py >= 11.5.0; python_version <  '3.5'",
+    "path >= 13.1.0;    python_version >= '3.5'",
+    "pathlib2; python_version < '3.4'",
+    # MAYBE: "backports.shutil_which; python_version <= '3.3'",
+]
+dynamic = ["version"]
+
+
+[project.urls]
+Homepage  = "http://github.com/jenisys/cmake-build"
+Download  = "http://github.com/jenisys/cmake-build"
+"Source Code" = "http://github.com/jenisys/cmake-build"
+"Issue Tracker" = "http://github.com/jenisys/cmake-build/issues/"
+
+
+[project.scripts]
+# behave = "behave.__main__:main"
+cmake-build = "cmake_build.__main__:program.run"
+
+
+[project.entry-points."distutils.commands"]
+cmake-build = "cmake_build.__main__:program.run"
+
+
+[project.optional-dependencies]
+develop = [
+    "build >= 0.5.1",
+    "twine >= 1.13.0",
+    "coverage >= 5.0",
+    # MAYBE: "pytest >=4.2,<5.0; python_version <  '3.0'",
+    "pytest <  5.0; python_version < '3.0'",
+    "pytest >= 5.0; python_version >= '3.0'",
+    "pytest-html >= 1.19.0,<2.0; python_version <  '3.0'",
+    "pytest-html >= 2.0;         python_version >= '3.0'",
+    # -- DISABLED: "behave >= 1.2.6",
+    "behave @ git+https://github.com/behave/behave@v1.2.7.dev5",
+    "behave4cmd0 @ git+https://github.com/behave/behave4cmd0.git@v1.2.7.dev6",
+    "PyHamcrest >= 1.9",
+    "tox < 4.0",
+    "modernize >= 0.5",
+    "pylint",
+    "ruff; python_version >=  '3.7'",
+]
+docs = [
+    "sphinx >= 7.3.7;   python_version >= '3.7'",
+    "sphinx >=1.6,<4.4; python_version < '3.7'",
+    "furo >= 2024.04.27; python_version >= '3.8'",
+    # -- CONSTRAINTS UNTIL: sphinx > 5.0 is usable -- 2024-01
+    # PROBLEM: sphinxcontrib-applehelp v1.0.8 requires sphinx > 5.0
+    # SEE: https://stackoverflow.com/questions/77848565/sphinxcontrib-applehelp-breaking-sphinx-builds-with-sphinx-version-less-than-5-0
+    "sphinxcontrib-applehelp >= 1.0.8; python_version >= '3.7'",
+    "sphinxcontrib-htmlhelp >= 2.0.5;  python_version >= '3.7'",
+    # -- SPHINX-EXTENSIONS:
+    "sphinx-copybutton >= 0.5.2; python_version >= '3.7'",
+]
+testing = [
+    "pytest <  5.0; python_version < '3.0'",
+    "pytest >= 5.0; python_version >= '3.0'",
+    "pytest-html >= 1.19.0,<2.0; python_version <  '3.0'",
+    "pytest-html >= 2.0;         python_version >= '3.0'",
+    # -- DISABLED: "behave >= 1.2.6",
+    "behave @ git+https://github.com/behave/behave@v1.2.7.dev5",
+    "behave4cmd0 @ git+https://github.com/behave/behave4cmd0.git@v1.2.7.dev6",
+    "PyHamcrest >= 1.9",
+    # MAYBE: "assertpy >= 1.1",
+]
+
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+
+# -----------------------------------------------------------------------------
+# PACAKING TOOL SPECIFIC PARTS:
+# -----------------------------------------------------------------------------
+#    provides = ["cmake_build"],
+#    packages = find_packages_by_root_package("cmake_build"),
+[tool.setuptools]
+platforms = ["any"]
+zip-safe = true
+
+[tool.setuptools.dynamic]
+version = {attr = "cmake_build.version.VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cmake_build*"]
+# exclude = ["behave4cmd0*", "tests*"]
+namespaces = false
+
+
+
+# -----------------------------------------------------------------------------
+# PYLINT:
+# -----------------------------------------------------------------------------
+[tool.pylint.messages_control]
+disable = "C0330, C0326"
+
+[tool.pylint.format]
+max-line-length = "100"
